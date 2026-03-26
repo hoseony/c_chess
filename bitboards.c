@@ -106,22 +106,25 @@ int p_move_check(Position *p, Move *m) {
     U64 w_occ = white_occ(p);
 
     U64 target_mask = 1ULL << m->to; // Target to bitboard
-    U64 diff = (m->to - m->from); // This gives you where the pawn will move
+    int diff = (m->to - m->from); // This gives you where the pawn will move
 
     if ( ((1ULL << m->from) & p->wp) == 0 ) { // check if the pawn exist
         printf("pawn no there\n");
         return -1;
     } else if (diff == 8) { // forward 1
-        if ( ((m->from % 8) == (m->to % 8)) && ((target_mask & occ) == 0) ) { 
+        if ((target_mask & occ) == 0) { 
             //check the same file, check one front
             printf("valid one forward move\n");
             return 1;
-        };
+        } else {
+            printf("invalid one forward move\n");
+            return -1;
+        }
     } else if (diff == 16) { // forward 2
         U64 middle_mask = (1ULL << (m->from + 8)); //one in front;
 
         if (m->from / 8 == 1) {
-            if( ((m->from % 8) == (m->to %8)) && ((middle_mask & occ) == 0) && ((target_mask & occ) == 0) ) {
+            if( ((middle_mask & occ) == 0) && ((target_mask & occ) == 0) ) {
                 printf("valid two forward move\n");
                 return 1;
             } else {
@@ -137,6 +140,9 @@ int p_move_check(Position *p, Move *m) {
             // checks if it is not a a-file & checks if there is smt to capture
             printf("can capture\n");
             return 1;
+        } else {
+            printf("invalid capture\n");
+            return -1;
         }
     } else if (diff == 9) { //capture right
          if ( (m->from % 8 != 7) && ((target_mask & b_occ) != 0) ) {
@@ -144,11 +150,13 @@ int p_move_check(Position *p, Move *m) {
             // checks if there is smt to capture
             printf("can capture\n");
             return 1;
+        } else {
+            printf("invalid capture\n");
+            return -1;
         }
     } else {
         return -1;
     }
-    return 1;
 }
 
 // -------------------------------
