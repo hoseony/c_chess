@@ -107,8 +107,6 @@ U64 all_occ(Position *p) {
 }
 
 // --------- move gen ----------
-U64 test_knight_bb = 0x0000000000000010;
-U64 test_knight_bb_2 = 0x0000000800000000;
 
 // Could be more efficient
 //
@@ -144,18 +142,43 @@ U64 MG_knight(U64 board) {
     return MG_knight;
 }
 
-
+U64 MG_rook(U64 board) {
+    U64 MG_rook = 0;
+    U64 shifter = 0;
+    for(int i = 0; i < 64; i++) {
+        if( ((shifter = (1ULL << i)) | board) == board) {
+            MG_rook |= (BIT_A_FILE << (i % 8));
+            MG_rook |= (BIT_1_RANK << (i / 8) * 8);
+        }
+    }
+    return MG_rook;
+}
 
 
 // -------------------------------
 int main() {
     Position p = initialize_position();
 
-    U64 MGknight = MG_knight(test_knight_bb);
-    print_bb(MGknight); 
-    print_bb(test_knight_bb);
+    U64 testBit1 = 0x0000000800000000;
+    U64 testBit2 = 0x1000000000000000;
 
-    print_bb(white_occ(&p));
+    U64 MGknight = MG_knight(testBit1);
+
+    print_bb(testBit1); 
+    print_bb(MGknight);
+
+    MGknight = MG_knight(testBit2);
+    print_bb(testBit2);
+    print_bb(MGknight); 
+
+
+    U64 MGRook = MG_rook(testBit1);
+    print_bb(testBit1); 
+    print_bb(MGRook);
+
+    MGRook = MG_rook(testBit2);
+    print_bb(testBit2); 
+    print_bb(MGRook);
 
     //printf("♔,♕,♖,♗,♘,♙,♚,♛,♜,♝,♞,♟︎ \n");
     return 0;
