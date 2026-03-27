@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include "constants.h" 
 
 typedef unsigned long long int U64;
 
@@ -171,26 +172,21 @@ U64 test_knight_bb = 0x0000000010000000;
 //MG: Move Generation
 U64 MG_knight(U64 board) {
     U64 MG_knight = 0;
-    
-
+    U64 shifter = 0; 
 
     for(int i = 0; i < 64; i++) {
-        if ( ((1ULL << i) | board) == board )  {
-            print_bb(1ULL << i); 
+        if ( ((shifter = (1ULL << i)) | board) == board )  {
 
+	    MG_knight |= (shifter << 17) * (((BIT_8_RANK | BIT_7_RANK) & (shifter << 17)) || (BIT_H_FILE & (shifter << 17))); 
+            MG_knight |= (shifter << 15) * (((BIT_8_RANK | BIT_7_RANK) & (shifter << 15)) || (BIT_A_FILE & (shifter << 17))); 
+            MG_knight |= (shifter << 6) * ((BIT_8_RANK & (shifter << 6)) || ((BIT_A_FILE | BIT_B_FILE) & (shifter << 6))); 
+            MG_knight |= (shifter << 10) * (((BIT_8_RANK) & (shifter << 10)) || ((BIT_G_FILE | BIT_H_FILE) & (shifter << 10)));
             
-            if ( (i % 8) - ((1ULL << (i + 17)) % 8) == -1) {
-                MG_knight |= 1ULL << (i + 17);
-            } 
+            MG_knight |= (shifter >> 17) * (((BIT_1_RANK | BIT_2_RANK) & (shifter >> 17)) || (BIT_A_FILE & (shifter >> 17)));
+            MG_knight |= (shifter >> 15) * (((BIT_1_RANK | BIT_2_RANK) & (shifter >> 15)) || (BIT_H_FILE & (shifter >> 15))); 
+            MG_knight |= (shifter >> 6) * ((BIT_1_RANK & (shifter >> 6)) || ((BIT_G_FILE | BIT_H_FILE) & (shifter >> 6))); 
+            MG_knight |= (shifter >> 10) * ((BIT_1_RANK & (shifter >> 10)) || ((BIT_A_FILE | BIT_B_FILE) & (shifter >> 10))); 
 
-            MG_knight |= 1ULL << (i + 15);
-            MG_knight |= 1ULL << (i + 6);
-            MG_knight |= 1ULL << (i + 10);
-            
-            MG_knight |= 1ULL << (i - 17);
-            MG_knight |= 1ULL << (i - 15);
-            MG_knight |= 1ULL << (i - 6);
-            MG_knight |= 1ULL << (i - 10);
         }
     }
     return MG_knight;
@@ -206,9 +202,6 @@ int main() {
     print_bb(MGknight); 
     print_bb(test_knight_bb);
 
-    print_bb((U64)0x1637821987000000); 
-    print_bb((U64)0x1637821987000000))
     //printf("♔,♕,♖,♗,♘,♙,♚,♛,♜,♝,♞,♟︎ \n");
-
     return 0;
 }
