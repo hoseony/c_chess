@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <math.h>
+#include <stdlib.h>
 
 typedef unsigned long long int U64;
 
@@ -29,7 +31,7 @@ void remove_bit(U64 *board, Board_pos pos);
 void move_bit(U64 *board, Board_pos start_pos, Board_pos target_pos);
 // so you are inputing board as &board type
 void print_bb(U64 board);
-
+int index_shift(int, int); 
 
 //------- Simple Bit Manipulation ---------
 inline void put_bit(U64 *board, Board_pos pos) {
@@ -43,6 +45,10 @@ inline void remove_bit(U64 *board, Board_pos pos) {
 inline void move_bit(U64 *board, Board_pos from, Board_pos to) {
     *board &= ~(1ULL << from); 
     put_bit(board, to);
+}
+
+inline int index_shift(int r, int f) {
+    return f + r * 8; 
 }
 
 // ------------- Print Board ----------------
@@ -100,7 +106,7 @@ U64 all_occ(Position *p) {
 }
 
 // --------- move check ---------
-int p_move_check(Position *p, Move *m) {
+int wp_move_check(Position *p, Move *m) {
     U64 occ = all_occ(p);
     U64 b_occ = black_occ(p);
     U64 w_occ = white_occ(p);
@@ -159,42 +165,49 @@ int p_move_check(Position *p, Move *m) {
     }
 }
 
+// --------- move gen ----------
+U64 test_knight_bb = 0x0000000010000000;
+
+//MG: Move Generation
+U64 MG_knight(U64 board) {
+    U64 MG_knight = 0;
+    
+
+
+    for(int i = 0; i < 64; i++) {
+        if ( ((1ULL << i) | board) == board )  {
+            print_bb(1ULL << i); 
+
+            
+            if ( (i % 8) - ((1ULL << (i + 17)) % 8) == -1) {
+                MG_knight |= 1ULL << (i + 17);
+            } 
+
+            MG_knight |= 1ULL << (i + 15);
+            MG_knight |= 1ULL << (i + 6);
+            MG_knight |= 1ULL << (i + 10);
+            
+            MG_knight |= 1ULL << (i - 17);
+            MG_knight |= 1ULL << (i - 15);
+            MG_knight |= 1ULL << (i - 6);
+            MG_knight |= 1ULL << (i - 10);
+        }
+    }
+    return MG_knight;
+}
+
 // -------------------------------
 int main() {
     Position p = initialize_position();
 
-    //print_bb(black_occ(&p));
-    //print_bb(white_occ(&p));
-    print_bb(all_occ(&p));
+    //print_bb(all_occ(&p));
 
-    // checking capture check
-    Move m1;
-    m1.from = e2;
-    m1.to = d3;
-    put_bit(&(p.bp), d3);
-    print_bb(all_occ(&p));
-    p_move_check(&p, &m1);
-    
-    // checking one forward
-    Move m2;
-    m2.from = a2;
-    m2.to = a3;
-    p_move_check(&p, &m2);
+    U64 MGknight = MG_knight(test_knight_bb);
+    print_bb(MGknight); 
+    print_bb(test_knight_bb);
 
-    // checking two forward
-    m2.from = a2;
-    m2.to = a4;
-    p_move_check(&p, &m2);
-    
-    // checking two forward blocked middle
-    m1.to = d4;
-    m1.from = d2;
-    p_move_check(&p, &m1);
-
-    put_bit(&(p.bp), h4);
-    m1.to = h4;
-    m1.from = h2;
-    p_move_check(&p, &m1);
+    print_bb((U64)0x1637821987000000); 
+    print_bb((U64)0x1637821987000000))
     //printf("♔,♕,♖,♗,♘,♙,♚,♛,♜,♝,♞,♟︎ \n");
 
     return 0;
