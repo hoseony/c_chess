@@ -106,101 +106,56 @@ U64 all_occ(Position *p) {
     return (p->bp | p->bn | p->bb | p->br | p->bq | p->bk | p->wp | p->wn | p->wb | p->wr | p->wq | p->wk);
 }
 
-// --------- move check ---------
-int wp_move_check(Position *p, Move *m) {
-    U64 occ = all_occ(p);
-    U64 b_occ = black_occ(p);
-    U64 w_occ = white_occ(p);
-
-    U64 target_mask = 1ULL << m->to; // Target to bitboard
-    int diff = (m->to - m->from); // This gives you where the pawn will move
-
-    if ( ((1ULL << m->from) & p->wp) == 0 ) { // check if the pawn exist
-        printf("pawn no there\n");
-        return -1;
-    } else if (diff == 8) { // forward 1
-        if ((target_mask & occ) == 0) { 
-            //check the same file, check one front
-            printf("valid one forward move\n");
-            return 1;
-        } else {
-            printf("invalid one forward move\n");
-            return -1;
-        }
-    } else if (diff == 16) { // forward 2
-        U64 middle_mask = (1ULL << (m->from + 8)); //one in front;
-
-        if (m->from / 8 == 1) {
-            if( ((middle_mask & occ) == 0) && ((target_mask & occ) == 0) ) {
-                printf("valid two forward move\n");
-                return 1;
-            } else {
-                printf("invalid two forward move\n");
-                return -1;
-            }
-        } else {
-            printf("invalid two forward move\n");
-            return -1;
-        }
-    } else if (diff == 7) { // capture left
-        if ( (m->from % 8 != 0) && ((target_mask & b_occ) != 0) ) { 
-            // checks if it is not a a-file & checks if there is smt to capture
-            printf("can capture\n");
-            return 1;
-        } else {
-            printf("invalid capture\n");
-            return -1;
-        }
-    } else if (diff == 9) { //capture right
-         if ( (m->from % 8 != 7) && ((target_mask & b_occ) != 0) ) {
-            // checks if it is not a h-file
-            // checks if there is smt to capture
-            printf("can capture\n");
-            return 1;
-        } else {
-            printf("invalid capture\n");
-            return -1;
-        }
-    } else {
-        return -1;
-    }
-}
-
 // --------- move gen ----------
-U64 test_knight_bb = 0x0000000010000000;
+U64 test_knight_bb = 0x0000000000000010;
+U64 test_knight_bb_2 = 0x0000000800000000;
 
-//MG: Move Generation
+// Could be more efficient
+//
+// ** also we should be able to like check move for one specific piece
+// you can do this like this:
+//
+// U64 knights = p.wn
+// while (knights) {
+//      U64 oneKnight = knights & (-knights);
+//      U64 moves = MG_knights(oneKnight);
+//      remove that bit;
+// }
+//
 U64 MG_knight(U64 board) {
     U64 MG_knight = 0;
     U64 shifter = 0; 
 
     for(int i = 0; i < 64; i++) {
         if ( ((shifter = (1ULL << i)) | board) == board )  {
+            // Generates moves for knight dependent on row and column 
+            // (does not add invalid moves if knight is on edge of board) 
 
-	    MG_knight |= (shifter << 17) * (((BIT_8_RANK | BIT_7_RANK) & (shifter << 17)) || (BIT_H_FILE & (shifter << 17))); 
-            MG_knight |= (shifter << 15) * (((BIT_8_RANK | BIT_7_RANK) & (shifter << 15)) || (BIT_A_FILE & (shifter << 17))); 
-            MG_knight |= (shifter << 6) * ((BIT_8_RANK & (shifter << 6)) || ((BIT_A_FILE | BIT_B_FILE) & (shifter << 6))); 
-            MG_knight |= (shifter << 10) * (((BIT_8_RANK) & (shifter << 10)) || ((BIT_G_FILE | BIT_H_FILE) & (shifter << 10)));
-            
-            MG_knight |= (shifter >> 17) * (((BIT_1_RANK | BIT_2_RANK) & (shifter >> 17)) || (BIT_A_FILE & (shifter >> 17)));
-            MG_knight |= (shifter >> 15) * (((BIT_1_RANK | BIT_2_RANK) & (shifter >> 15)) || (BIT_H_FILE & (shifter >> 15))); 
-            MG_knight |= (shifter >> 6) * ((BIT_1_RANK & (shifter >> 6)) || ((BIT_G_FILE | BIT_H_FILE) & (shifter >> 6))); 
-            MG_knight |= (shifter >> 10) * ((BIT_1_RANK & (shifter >> 10)) || ((BIT_A_FILE | BIT_B_FILE) & (shifter >> 10))); 
-
+	        MG_knight |= (shifter << 17) * !(((BIT_8_RANK | BIT_7_RANK) & shifter) || (BIT_H_FILE & shifter)); 
+            MG_knight |= (shifter << 15) * !(((BIT_8_RANK | BIT_7_RANK) & shifter) || (BIT_A_FILE & (shifter))); 
+            MG_knight |= (shifter << 6) * !((BIT_8_RANK & shifter) || ((BIT_A_FILE | BIT_B_FILE) & (shifter))); 
+            MG_knight |= (shifter << 10) * !((BIT_8_RANK & shifter) || ((BIT_G_FILE | BIT_H_FILE) & (shifter)));
+            MG_knight |= (shifter >> 17) * !(((BIT_1_RANK | BIT_2_RANK) & shifter) || (BIT_A_FILE & (shifter)));
+            MG_knight |= (shifter >> 15) * !(((BIT_1_RANK | BIT_2_RANK) & shifter) || (BIT_H_FILE & (shifter))); 
+            MG_knight |= (shifter >> 6) * !(((BIT_1_RANK & shifter) || ((BIT_G_FILE | BIT_H_FILE) & (shifter)))); 
+            MG_knight |= (shifter >> 10) * !((BIT_1_RANK & shifter) || ((BIT_A_FILE | BIT_B_FILE) & (shifter))); 
         }
     }
     return MG_knight;
 }
 
+
+
+
 // -------------------------------
 int main() {
     Position p = initialize_position();
 
-    //print_bb(all_occ(&p));
-
     U64 MGknight = MG_knight(test_knight_bb);
     print_bb(MGknight); 
     print_bb(test_knight_bb);
+
+    print_bb(white_occ(&p));
 
     //printf("♔,♕,♖,♗,♘,♙,♚,♛,♜,♝,♞,♟︎ \n");
     return 0;
