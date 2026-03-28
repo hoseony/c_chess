@@ -1,6 +1,5 @@
 #include <stdio.h>
-typedef unsigned long long int U64;
-
+#include "move_generation.c" 
 
 int main() {
     U64 lookup;
@@ -12,8 +11,10 @@ int main() {
             f = (i % 8);
             lookup |= (1ULL << (r*8 + f))
         }
-            
+	
+	
         
     // }
     return 0;
 }
+
