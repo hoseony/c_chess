@@ -120,7 +120,6 @@ U64 all_occ(Position *p) {
 //      U64 moves = MG_knights(oneKnight);
 //      remove that bit;
 // }
-//
 
 
 // Could be more efficient
@@ -133,7 +132,7 @@ U64 MG_knight(U64 board) {
             // Generates moves for knight dependent on row and column 
             // (does not add invalid moves if knight is on edge of board) 
 
-	        MG_knight |= (shifter << 17) * !(((BIT_8_RANK | BIT_7_RANK) & shifter) || (BIT_H_FILE & shifter)); 
+            MG_knight |= (shifter << 17) * !(((BIT_8_RANK | BIT_7_RANK) & shifter) || (BIT_H_FILE & shifter)); 
             MG_knight |= (shifter << 15) * !(((BIT_8_RANK | BIT_7_RANK) & shifter) || (BIT_A_FILE & (shifter))); 
             MG_knight |= (shifter << 6) * !((BIT_8_RANK & shifter) || ((BIT_A_FILE | BIT_B_FILE) & (shifter))); 
             MG_knight |= (shifter << 10) * !((BIT_8_RANK & shifter) || ((BIT_G_FILE | BIT_H_FILE) & (shifter)));
@@ -163,10 +162,12 @@ U64 MG_bishop(U64 board) {
     U64 shifter = 0;
     for(int i = 0; i < 64; i++) {
         if( ((shifter = (1ULL << i)) | board) == board) {
+            MG_bishop = (0x8040201008040201) << (((i % 8) * 8) + (i / 8));
         }
     }
     return MG_bishop;
 }
+
 // -------------------------------
 int main() {
     Position p = initialize_position();
@@ -190,7 +191,7 @@ int main() {
     MGRook = MG_rook(testBit2);
     print_bb(testBit2); 
     print_bb(MGRook);
-*/
+
     U64 MGBishop = MG_bishop(testBit1);
     print_bb(testBit1); 
     print_bb(MGBishop);
@@ -198,8 +199,13 @@ int main() {
     MGBishop = MG_bishop(testBit2);
     print_bb(testBit2); 
     print_bb(MGBishop);
+*/
 
-    print_bb((U64)0x8040201008040201);
+    U64 test = test_bishop(testBit1);
+    print_bb(testBit1);
+    print_bb(test);
+
+    //print_bb((U64)0x8040201008040201);
 
     //printf("♔,♕,♖,♗,♘,♙,♚,♛,♜,♝,♞,♟︎ \n");
     return 0;
