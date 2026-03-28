@@ -17,6 +17,8 @@ chess.MG_rook.restype = ctypes.c_uint64
 chess.MG_bishop.argtypes = [ctypes.c_uint64]
 chess.MG_bishop.restype = ctypes.c_uint64
 
+chess.MG_queen.argtypes = [ctypes.c_uint64]
+chess.MG_queen.restype = ctypes.c_uint64
 
 pygame.init()
 WIDTH = 640
@@ -61,7 +63,8 @@ while running:
             piece_pos = rank * 8 + file
             # move_bb = chess.MG_knight(1 << piece_pos)
             # move_bb = chess.MG_rook(1 << piece_pos)
-            move_bb = chess.MG_bishop(1 << piece_pos)
+            # move_bb = chess.MG_bishop(1 << piece_pos)
+            move_bb = chess.MG_queen(1 << piece_pos)
 
     draw_board(piece_pos, move_bb)
     pygame.display.flip()
