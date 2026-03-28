@@ -136,24 +136,41 @@ U64 MG_rook(U64 board) {
     return MG_rook;
 }
 
-U64 MG_bishop(U64 board) {
-    U64 MG_bishop = 0;
-    U64 shifter = 0;
-    for(int i = 0; i < 64; i++) {
-        if( ((shifter = (1ULL << i)) | board) == board) {
-            MG_bishop = (0x8040201008040201) << (((i % 8) * 8) + (i / 8));
-        }
-    }
-    return MG_bishop;
+int main() {
+	unsigned long long diagonal = 0; 
+
+	for (size_t i = 0; i < 8; i++) {
+		diagonal = 0; 
+		for (size_t j = 0; j <= i; j++) {
+			diagonal |= (1ULL << (i + 7 * j));
+		}
+		for (size_t j = 1; j < 8 - i; j++) {
+			diagonal |= (1ULL << (i + 9 * j));
+		}
+        print_bb(diagonal);
+	}
+
+	for (size_t i = 0; i < 8; i++) {
+		diagonal = 0; 
+		for (size_t j = 0; j <= i; j++) {
+			diagonal |= (1ULL << ((i * 8) - 7 * j));
+		}
+		for (size_t j = 1; j < 8 - i; j++) {
+			diagonal |= (1ULL << ((i * 8) + 9 * j));
+		}
+        print_bb(diagonal);
+	}
+    return 0;
 }
 
 // -------------------------------
+/*
 int main() {
     Position p = initialize_position();
 
     U64 testBit1 = 0x0000000800000000;
     U64 testBit2 = 0x1000000000000000;
-/*
+
     U64 MGknight = MG_knight(testBit1);
 
     print_bb(testBit1); 
@@ -178,7 +195,7 @@ int main() {
     MGBishop = MG_bishop(testBit2);
     print_bb(testBit2); 
     print_bb(MGBishop);
-*/
+
 
     U64 test = test_bishop(testBit1);
     print_bb(testBit1);
@@ -189,3 +206,5 @@ int main() {
     //printf("♔,♕,♖,♗,♘,♙,♚,♛,♜,♝,♞,♟︎ \n");
     return 0;
 }
+
+*/

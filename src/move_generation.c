@@ -1,5 +1,6 @@
 #include "constants.h" 
 #include "types.h" 
+#include <stdlib.h>
 
 U64 MG_knight(U64 board) {
     U64 MG_knight = 0;
@@ -43,7 +44,7 @@ Board_pos debug_index_bitboard_pos(U64 board) {
 		board >>= 8; 
 	for (f = 0; (board >> 1) > 0; f++)
 		board >>= 1;
-	return (Board_pos)(r * 8 + f)
+	return (Board_pos)(r * 8 + f);
 }
 
 
