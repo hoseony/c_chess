@@ -108,9 +108,10 @@ U64 all_occ(Position *p) {
 
 // --------- move gen ----------
 
-// Could be more efficient
-//
+// *MG for move generation
 // ** also we should be able to like check move for one specific piece
+//
+// I ma not sure yet if we should make this for each piece or integrate this on our MG functions
 // you can do this like this:
 //
 // U64 knights = p.wn
@@ -120,6 +121,9 @@ U64 all_occ(Position *p) {
 //      remove that bit;
 // }
 //
+
+
+// Could be more efficient
 U64 MG_knight(U64 board) {
     U64 MG_knight = 0;
     U64 shifter = 0; 
@@ -154,14 +158,22 @@ U64 MG_rook(U64 board) {
     return MG_rook;
 }
 
-
+U64 MG_bishop(U64 board) {
+    U64 MG_bishop = 0;
+    U64 shifter = 0;
+    for(int i = 0; i < 64; i++) {
+        if( ((shifter = (1ULL << i)) | board) == board) {
+        }
+    }
+    return MG_bishop;
+}
 // -------------------------------
 int main() {
     Position p = initialize_position();
 
     U64 testBit1 = 0x0000000800000000;
     U64 testBit2 = 0x1000000000000000;
-
+/*
     U64 MGknight = MG_knight(testBit1);
 
     print_bb(testBit1); 
@@ -171,7 +183,6 @@ int main() {
     print_bb(testBit2);
     print_bb(MGknight); 
 
-
     U64 MGRook = MG_rook(testBit1);
     print_bb(testBit1); 
     print_bb(MGRook);
@@ -179,6 +190,16 @@ int main() {
     MGRook = MG_rook(testBit2);
     print_bb(testBit2); 
     print_bb(MGRook);
+*/
+    U64 MGBishop = MG_bishop(testBit1);
+    print_bb(testBit1); 
+    print_bb(MGBishop);
+
+    MGBishop = MG_bishop(testBit2);
+    print_bb(testBit2); 
+    print_bb(MGBishop);
+
+    print_bb((U64)0x8040201008040201);
 
     //printf("♔,♕,♖,♗,♘,♙,♚,♛,♜,♝,♞,♟︎ \n");
     return 0;
