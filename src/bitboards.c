@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "constants.h" 
 #include "types.h" 
@@ -14,6 +15,7 @@ void print_bb(U64 board);
 int index_shift(int, int); 
 
 //------- Simple Bit Manipulation ---------
+
 inline void put_bit(U64 *board, Board_pos pos) {
     *board |= (1ULL << pos);
 }
@@ -139,6 +141,8 @@ U64 MG_rook(U64 board) {
     return MG_rook;
 }
 
+// (r * 8 + f) can be replaced to index_shift function
+// But idk how much that helps in terms of readability of the code
 U64 MG_bishop(U64 board) {
     U64 MG_bishop = 0;
 
@@ -175,11 +179,11 @@ U64 MG_king(U64 board) {
 }
 
 U64 MG_queen(U64 board) {
-    return (MG_rook(board) | MG_bishop(board);
+    return (MG_rook(board) | MG_bishop(board));
 }
 
 U64 MG_wpawn(U64 board, Move lastmove) {
-    U64 black_occ = black_occ(&board);
+    //U64 black_occ = black_occ(board);
 
 
 
@@ -206,6 +210,31 @@ U64 pawn_promotion(U64 board) {
 
 // -------------------------------
 
+void print_game_board(State p) {
+    for(int i = 0; i < 64; i++) {
+        if (p.bp & (1ULL << i)) printf("♟︎"); 
+        else if (p.bn & (1ULL << i)) printf("♞");
+        else if (p.bb & (1ULL << i)) printf("♝");
+        else if (p.br & (1ULL << i)) printf("♜");
+        else if (p.bq & (1ULL << i)) printf("♛");
+        else if (p.bk & (1ULL << i)) printf("♚");
+
+        else if (p.wp & (1ULL << i)) printf("♙");
+        else if (p.wn & (1ULL << i)) printf("♘");
+        else if (p.wb & (1ULL << i)) printf("♗");
+        else if (p.wr & (1ULL << i)) printf("♖");
+        else if (p.wq & (1ULL << i)) printf("♕");
+        else if (p.wk & (1ULL << i)) printf("♔");
+
+        else printf(".");
+
+        if ((i % 8) == 7) {
+            printf("\n");
+        }
+    }
+}
+
+// ------------------------------
 int main() {
     State p = initialize_state();
 
@@ -219,7 +248,8 @@ int main() {
     print_bb(testBit1);
     print_bb(MGQueen);
 
-    //printf("♔,♕,♖,♗,♘,♙,♚,♛,♜,♝,♞,♟︎ \n");
+    print_game_board(p);
     return 0;
 }
+
 
