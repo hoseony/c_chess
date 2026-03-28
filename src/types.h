@@ -1,3 +1,6 @@
+#define WHITE 0
+#define BLACK 1
+
 typedef unsigned long long int U64;
 
 typedef enum {
@@ -14,9 +17,13 @@ typedef enum {
 typedef struct{
     U64 wp, wn, wb, wr, wq, wk;
     U64 bp, bn, bb, br, bq, bk;
-} Position;
+    bool turn;
+} State;
 
 typedef struct{
-    Board_pos from;
-    Board_pos to;
+    State before;
+    State after;
+    int type;
 } Move;
+
+

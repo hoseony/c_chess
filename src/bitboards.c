@@ -55,8 +55,8 @@ void print_bb(U64 board) {
 }
 
 // --------- Initialize Board ------------
-Position initialize_position() {
-    Position p;
+State initialize_state() {
+    State p;
     p.wp = 0x000000000000FF00;
     p.wn = 0x0000000000000042;
     p.wb = 0x0000000000000024;
@@ -70,18 +70,19 @@ Position initialize_position() {
     p.br = 0x8100000000000000;
     p.bq = 0x0800000000000000;
     p.bk = 0x1000000000000000;
+    p.turn = WHITE;
     return p;
 }
 // ---------Combined Board ------------
-U64 black_occ(Position *p) {
+U64 black_occ(State *p) {
     return (p->bp | p->bn | p->bb | p->br | p->bq | p->bk);
 }
 
-U64 white_occ(Position *p) {
+U64 white_occ(State *p) {
     return (p->wp | p->wn | p->wb | p->wr | p->wq | p->wk);
 }
 
-U64 all_occ(Position *p) {
+U64 all_occ(State *p) {
     return (p->bp | p->bn | p->bb | p->br | p->bq | p->bk | p->wp | p->wn | p->wb | p->wr | p->wq | p->wk);
 }
 
@@ -168,14 +169,45 @@ U64 MG_bishop(U64 board) {
     return MG_bishop;
 }
 
+U64 MG_king(U64 board) {
+    
+
+}
+
 U64 MG_queen(U64 board) {
-    return (MG_rook(board) | MG_bishop(board));
+    return (MG_rook(board) | MG_bishop(board);
+}
+
+U64 MG_wpawn(U64 board, Move lastmove) {
+    U64 black_occ = black_occ(&board);
+
+
+
+    // capture
+    // en-passan
+    // direction
+    // two move initial
+}
+
+U64 MG_bpawn(U64 board) {
+    // capture
+    // en-passan
+    // direction
+    // two move initial
+}
+
+U64 pawn_promotion(U64 board) {
+    // I think this can be combined because white pawn 
+    // cannot go to the rank 1 and black pawn cannot go to the 
+    // rank 8 
+    // but idk if you want to make it so that you can also play really weird Position
+    // maybe you need to separate this.
 }
 
 // -------------------------------
 
 int main() {
-    Position p = initialize_position();
+    State p = initialize_state();
 
     U64 testBit1 = 0x0000000800000000;
     U64 testBit2 = 0x1000000000000000;
@@ -187,44 +219,6 @@ int main() {
     print_bb(testBit1);
     print_bb(MGQueen);
 
-    return 0;
-
-
-
-    
-/*
-    U64 MGknight = MG_knight(testBit1);
-
-    print_bb(testBit1); 
-    print_bb(MGknight);
-
-    MGknight = MG_knight(testBit2);
-    print_bb(testBit2);
-    print_bb(MGknight); 
-
-    U64 MGRook = MG_rook(testBit1);
-    print_bb(testBit1); 
-    print_bb(MGRook);
-
-    MGRook = MG_rook(testBit2);
-    print_bb(testBit2); 
-    print_bb(MGRook);
-
-    U64 MGBishop = MG_bishop(testBit1);
-    print_bb(testBit1); 
-    print_bb(MGBishop);
-
-    MGBishop = MG_bishop(testBit2);
-    print_bb(testBit2); 
-    print_bb(MGBishop);
-
-
-    U64 test = test_bishop(testBit1);
-    print_bb(testBit1);
-    print_bb(test);
-
-    //print_bb((U64)0x8040201008040201);
-*/
     //printf("♔,♕,♖,♗,♘,♙,♚,♛,♜,♝,♞,♟︎ \n");
     return 0;
 }
