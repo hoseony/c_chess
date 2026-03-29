@@ -116,7 +116,6 @@ U64 generateKnightMove(int square) {
     U64 shifter = (1ULL << square); 
 
     // does not add invalid moves if knight is on edge of board 
-
     knightMove |= (shifter << 17) * !(((BIT_8_RANK | BIT_7_RANK) & shifter) || (BIT_H_FILE & shifter)); 
     knightMove |= (shifter << 15) * !(((BIT_8_RANK | BIT_7_RANK) & shifter) || (BIT_A_FILE & (shifter))); 
     knightMove |= (shifter << 6) * !((BIT_8_RANK & shifter) || ((BIT_A_FILE | BIT_B_FILE) & (shifter))); 
@@ -136,7 +135,9 @@ U64 generateRookMove(int square) {
     int file = square % 8;
     int rank = square / 8;
 
-    for (r = rank + 1; r < 8; r++) rookMove |= (1ULL << (r * 8 + file));
+    for (r = rank + 1; r < 8; r++) {
+        rookMove |= (1ULL << (r * 8 + file));
+    }
     for (r = rank - 1; r >= 0; r--) rookMove |= (1ULL << (r * 8 + file));
     for (f = file + 1; f < 8; f++) rookMove |= (1ULL << (rank * 8 + f));
     for (f = file - 1; f >= 0; f--) rookMove |= (1ULL << (rank * 8 + f));
@@ -144,28 +145,52 @@ U64 generateRookMove(int square) {
     return rookMove;
 }
 
-U64 generateBishopMove(int square) {
+U64 generateBishopMove(int square, U64 occupied) {
     U64 bishopMove = 0;
     int r, f;
 
     int file = square % 8;
     int rank = square / 8;
 
-    for (r = rank + 1, f = file + 1; f < 8 && r < 8; r++, f++) bishopMove |= (1ULL << (r * 8 + f));
-    for (r = rank + 1, f = file - 1; f >= 0 && r < 8; r++, f--) bishopMove |= (1ULL << (r * 8 + f));
-    for (r = rank - 1, f = file + 1; f < 8 && r >= 0; r--, f++) bishopMove |= (1ULL << (r * 8 + f));
-    for (r = rank - 1, f = file - 1; f >= 0 && r >= 0; r--, f--) bishopMove |= (1ULL << (r * 8 + f));
+    for (r = rank + 1, f = file + 1; f < 8 && r < 8; r++, f++) {
+        bishopMove |= (1ULL << (r * 8 + f));
+        if (occupied & (1ULL << (r * 8 + f))) {
+            break;
+        }
+    }
+
+    for (r = rank + 1, f = file - 1; f >= 0 && r < 8; r++, f--) {
+        bishopMove |= (1ULL << (r * 8 + f));
+        if (occupied & (1ULL << (r * 8 + f))) {
+            break;
+        }
+    }
+
+    for (r = rank - 1, f = file + 1; f < 8 && r >= 0; r--, f++) {
+        bishopMove |= (1ULL << (r * 8 + f));
+        if (occupied & (1ULL << (r * 8 + f))) {
+            break;
+        }
+    }
+
+    for (r = rank - 1, f = file - 1; f >= 0 && r >= 0; r--, f--) {
+        bishopMove |= (1ULL << (r * 8 + f));
+        if (occupied & (1ULL << (r * 8 + f))) {
+            break;
+        }
+    }
 
     return bishopMove;
 }
 
+U64 generateQueenMove(int square, U64 occupied) {
+    return (generateBishopMove(square, occupied) | generateRookMove(square));
+}
+
+
 U64 generateKingMove(int square) {
     
 
-}
-
-U64 generateQueenMove(int square) {
-    return (generateBishopMove(square) | generateRookMove(square));
 }
 
 U64 generateWhitePawnMove(U64 board, Move lastmove) {
@@ -221,6 +246,8 @@ void printGameBoard(State p) {
 // ------------------------------
 int main() {
     State p = initializeState();
+    U64 occ = 0;
+        //allOccupied(p);
 
     U64 testBit1 = 0x0000000800000000;
     U64 testBit2 = 0x1000000000000000;
@@ -229,8 +256,8 @@ int main() {
     int square = popLSB(&temp);
 
     printBitboard(generateRookMove(square));
-    printBitboard(generateBishopMove(square));
-    printBitboard(generateQueenMove(square));
+    printBitboard(generateBishopMove(square, occ));
+    printBitboard(generateQueenMove(square, occ));
 
     // so the general idea will be 
     // U64 allMoves = 0;
