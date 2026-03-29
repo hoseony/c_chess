@@ -20,7 +20,6 @@ U64 whiteOccupied(State p);
 U64 allOccupied(State p);
 
 //------- Simple Bit Manipulation ---------
-
 inline void putBit(U64 *board, Board_pos pos) {
     *board |= (1ULL << pos);
 }
@@ -107,7 +106,7 @@ U64 allOccupied(State p) {
     return (p.bp | p.bn | p.bb | p.br | p.bq | p.bk | p.wp | p.wn | p.wb | p.wr | p.wq | p.wk);
 }
 
-// --------- move gen ----------
+// --------- generate move ----------
 
 // Todo: magic bitboard
 
@@ -199,7 +198,8 @@ U64 generateBishopMove(int square, U64 occupied) {
     for (r = rank - 1, f = file - 1; f >= 0 && r >= 0; r--, f--) {
         bishopMove |= (1ULL << (r * 8 + f));
         if (occupied & (1ULL << (r * 8 + f))) {
-            break; }
+            break;
+        }
     }
 
     return bishopMove;
@@ -214,6 +214,7 @@ U64 generateKingMove(int square, U64 occupied) {
     U64 kingMove = 0;
     int file = square % 8;
     int rank = square /8;
+
     return kingMove;
 }
 
@@ -277,7 +278,6 @@ void printGameBoard(State p) {
 int main() {
     State p = initializeState();
     U64 occ = 0;
-        //allOccupied(p);
 
     U64 testBit1 = 0x0000000800000000;
     U64 testBit2 = 0x1000000000000000;
@@ -295,6 +295,7 @@ int main() {
     //      square = popLSB(temp)
     //      allMoves |= generateRookMove(square)
     // This will be computationally faster than the way we were doing previously
+
     return 0;
 }
 
