@@ -251,28 +251,28 @@ U64 pawnPromotion(U64 board) {
 // -------------------------------
 
 void printGameBoard(State p) {
-    for(int i = 0; i < 64; i++) {
-        if (p.bp & (1ULL << i)) printf("♟︎"); 
-        else if (p.bn & (1ULL << i)) printf("♞");
-        else if (p.bb & (1ULL << i)) printf("♝");
-        else if (p.br & (1ULL << i)) printf("♜");
-        else if (p.bq & (1ULL << i)) printf("♛");
-        else if (p.bk & (1ULL << i)) printf("♚");
+    for(int i = 7; i >= 0; i--) {
+        for(int j = 0; j < 8; j++) {
+            if (p.wp & (1ULL << (i * 8 + j))) printf("♟︎"); 
+            else if (p.wn & (1ULL << (i * 8 + j))) printf("♞");
+            else if (p.wb & (1ULL << (i * 8 + j))) printf("♝");
+            else if (p.wr & (1ULL << (i * 8 + j))) printf("♜");
+            else if (p.wq & (1ULL << (i * 8 + j))) printf("♛");
+            else if (p.wk & (1ULL << (i * 8 + j))) printf("♚");
 
-        else if (p.wp & (1ULL << i)) printf("♙");
-        else if (p.wn & (1ULL << i)) printf("♘");
-        else if (p.wb & (1ULL << i)) printf("♗");
-        else if (p.wr & (1ULL << i)) printf("♖");
-        else if (p.wq & (1ULL << i)) printf("♕");
-        else if (p.wk & (1ULL << i)) printf("♔");
-
-        else printf(".");
-
-        if ((i % 8) == 7) {
-            printf("\n");
+            else if (p.bp & (1ULL << (i * 8 + j))) printf("♙");
+            else if (p.bn & (1ULL << (i * 8 + j))) printf("♘");
+            else if (p.bb & (1ULL << (i * 8 + j))) printf("♗");
+            else if (p.br & (1ULL << (i * 8 + j))) printf("♖");
+            else if (p.bq & (1ULL << (i * 8 + j))) printf("♕");
+            else if (p.bk & (1ULL << (i * 8 + j))) printf("♔");
+            else printf("·");
         }
+    printf("\n");
     }
 }
+
+
 
 // ------------------------------
 int main() {
@@ -298,5 +298,3 @@ int main() {
 
     return 0;
 }
-
-
