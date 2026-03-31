@@ -32,9 +32,14 @@ State fenToState(char *fen) {
         }
     }
 
-    // I still haven't added casteling part
-    // It just parse until                   here->| 
-    // rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1
+    while(*fen == ' ') {
+        fen++;
+    }
 
+    state.turn = (*fen = 'b') ? BLACK : WHITE;
     return state;
+    
+    // I still haven't added casteling part
+    // It just parse until                     here->| 
+    // rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1
 }
