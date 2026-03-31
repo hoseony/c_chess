@@ -213,7 +213,18 @@ U64 generateQueenMove(int square, U64 occupied) {
 U64 generateKingMove(int square, U64 occupied) {
     U64 kingMove = 0;
     int file = square % 8;
-    int rank = square /8;
+    int rank = square / 8;
+    
+
+    kingMove |= (1ULL << (square + 1)) * !(BIT_H_FILE & (1ULL << square));
+    kingMove |= (1ULL << (square - 1)) * !(BIT_A_FILE & (1ULL << square));
+    kingMove |= (1ULL << (square + 8)) * !(BIT_8_RANK & (1ULL << square));
+    kingMove |= (1ULL << (square - 8)) * !(BIT_1_RANK & (1ULL << square));
+
+    kingMove |= (1ULL << (square + 9)) * !((BIT_H_FILE | BIT_8_RANK) & (1ULL << square));
+    kingMove |= (1ULL << (square + 7)) * !((BIT_A_FILE | BIT_8_RANK) & (1ULL << square));
+    kingMove |= (1ULL << (square - 9)) * !((BIT_1_RANK | BIT_A_FILE) & (1ULL << square));
+    kingMove |= (1ULL << (square - 7)) * !((BIT_1_RANK | BIT_H_FILE) & (1ULL << square));
 
     return kingMove;
 }
@@ -251,6 +262,15 @@ U64 pawnPromotion(U64 board) {
 // -------------------------------
 
 void printGameBoard(State p) {
+
+    printf("------ ");
+    if(p.turn == WHITE) {
+        printf("White to move");
+    } else {
+        printf("Black to move");
+    }
+    printf(" ------\n");
+
     for(int i = 7; i >= 0; i--) {
         for(int j = 0; j < 8; j++) {
             if (p.wp & (1ULL << (i * 8 + j))) printf("♟︎"); 
@@ -272,22 +292,23 @@ void printGameBoard(State p) {
     }
 }
 
-
-
 // ------------------------------
 int main() {
     State p = initializeState();
     U64 occ = 0;
+    //printGameBoard(p);
 
-    U64 testBit1 = 0x0000000800000000;
-    U64 testBit2 = 0x1000000000000000;
+    U64 testBit1 = 0x0000000080000000;
+    U64 testBit2 = 0x0000000010000000;
 
     U64 temp = testBit1;
     int square = popLSB(&temp);
 
+    printBitboard(generateKingMove(square, occ));
     printBitboard(generateRookMove(square, occ));
-    printBitboard(generateBishopMove(square, occ));
-    printBitboard(generateQueenMove(square, occ));
+
+    //printBitboard(generateBishopMove(square, occ));
+    //printBitboard(generateQueenMove(square, occ));
 
     // so the general idea will be 
     // U64 allMoves = 0;
@@ -295,6 +316,5 @@ int main() {
     //      square = popLSB(temp)
     //      allMoves |= generateRookMove(square)
     // This will be computationally faster than the way we were doing previously
-
     return 0;
 }
