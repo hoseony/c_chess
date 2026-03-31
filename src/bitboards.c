@@ -215,12 +215,10 @@ U64 generateKingMove(int square, U64 occupied) {
     int file = square % 8;
     int rank = square / 8;
     
-
     kingMove |= (1ULL << (square + 1)) * !(BIT_H_FILE & (1ULL << square));
     kingMove |= (1ULL << (square - 1)) * !(BIT_A_FILE & (1ULL << square));
     kingMove |= (1ULL << (square + 8)) * !(BIT_8_RANK & (1ULL << square));
     kingMove |= (1ULL << (square - 8)) * !(BIT_1_RANK & (1ULL << square));
-
     kingMove |= (1ULL << (square + 9)) * !((BIT_H_FILE | BIT_8_RANK) & (1ULL << square));
     kingMove |= (1ULL << (square + 7)) * !((BIT_A_FILE | BIT_8_RANK) & (1ULL << square));
     kingMove |= (1ULL << (square - 9)) * !((BIT_1_RANK | BIT_A_FILE) & (1ULL << square));
