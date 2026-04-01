@@ -1,5 +1,10 @@
+#ifndef TYPES_H
+#define TYPES_H
+
 #define WHITE 0
 #define BLACK 1
+
+#include <stdbool.h>
 
 typedef unsigned long long int U64;
 typedef unsigned int U32; 
@@ -33,3 +38,5 @@ typedef struct{
 State currentState;
 State prevState;
 State prevprevState; 
+
+#endif
