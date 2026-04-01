@@ -6,6 +6,11 @@
 #include "constants.h" 
 #include "types.h" 
 
+State currentState; 
+State prevState;
+State prevPrevState; 
+
+
 //-------- function prototype ----------
 void putBit(U64 *board, Board_pos pos);
 void removeBit(U64 *board, Board_pos pos);
@@ -37,7 +42,7 @@ inline int indexShift(int r, int f) {
     return f + r * 8; 
 }
 
-int popLSB(U64 *board) {
+inline int popLSB(U64 *board) {
     // this is a funny operation from gnu compiler that gets the LSB index
     // if you are interested in, check gnu documentation
     // https://gcc.gnu.org/onlinedocs/gcc/Bit-Operation-Builtins.html 
@@ -227,18 +232,28 @@ U64 generateKingMove(int square, U64 occupied) {
     return kingMove;
 }
 
-U64 generateWhitePawnMove(U64 board, Move lastmove) {
+inline U64 generateEnPassant(State prev_state, State current_state) {
+   U64 en_passant = ((((current_state.wp ^ prev_state.wp)) & current_state.wp) >> 8) * ((current_state.wp ^ prev_state.wp) & BIT_2_RANK > 0);
+   en_passant |= ((((current_state.bp ^ prev_state.bp)) & current_state.bp) << 8) * ((current_state.bp ^ prev_state.bp) & BIT_6_RANK > 0);
+   return en_passant; 
+}
+
+U64 generateWhitePawnMove(int square, U64 board, Move lastmove) {
     U64 whitePawnMove = 0;
-    //U64 black_occ = black_occ(board);
+    U64 black_board = black_occ(board);
 
     // capture
-    // en-passan
+    whitePawnMove |= ((1ULL << square) << 9) * ((BIT_A_FILE & (1ULL << square) << 9) == 0); 
+    whitePawnMove |= ((1ULL << square) << 7) * ((BIT_H_FILE & (1ULL << square) << 7) == 0); 
+    whitePawnMove &= black_board;  
+    // en-passant
+    whitePawn = (((1ULL << square) << 9) & generateEnPassant()) * ((BIT_A_FILE & (1ULL << square) << 9) == 0); 
     // direction
     // two move initial
     return whitePawnMove = 0;
 }
 
-U64 generateBlackPawnMove(U64 board) {
+U64 generateBlackPawnMove(int square, U64 board) {
     U64 blackPawnMove = 0;
     // capture
     // en-passan

@@ -2,6 +2,7 @@
 #define BLACK 1
 
 typedef unsigned long long int U64;
+typedef unsigned int U32; 
 
 typedef enum {
     a1, b1, c1, d1, e1, f1, g1, h1,
@@ -18,6 +19,9 @@ typedef struct{
     U64 wp, wn, wb, wr, wq, wk;
     U64 bp, bn, bb, br, bq, bk;
     bool turn;
+    U32 fiftyMoveRule;
+    U32 threeMoveRepetition; 
+    U32 castleState; 
 } State;
 
 typedef struct{
