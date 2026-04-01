@@ -6,11 +6,6 @@
 #include "constants.h" 
 #include "types.h" 
 
-State currentState; 
-State prevState;
-State prevPrevState; 
-
-
 //-------- function prototype ----------
 void putBit(U64 *board, Board_pos pos);
 void removeBit(U64 *board, Board_pos pos);
@@ -232,33 +227,44 @@ U64 generateKingMove(int square, U64 occupied) {
     return kingMove;
 }
 
-inline U64 generateEnPassant(State prev_state, State current_state) {
-   U64 en_passant = ((((current_state.wp ^ prev_state.wp)) & current_state.wp) >> 8) * ((current_state.wp ^ prev_state.wp) & BIT_2_RANK > 0);
-   en_passant |= ((((current_state.bp ^ prev_state.bp)) & current_state.bp) << 8) * ((current_state.bp ^ prev_state.bp) & BIT_6_RANK > 0);
+U64 generateEnPassant() {
+   U64 en_passant = ((((currentState.wp ^ prevState.wp)) & currentState.wp) >> 8) * ((currentState.wp ^ prevState.wp) & BIT_2_RANK > 0);
+   en_passant |= ((((currentState.bp ^ prevState.bp)) & currentState.bp) << 8) * ((currentState.bp ^ prevState.bp) & BIT_6_RANK > 0);
    return en_passant; 
 }
 
-U64 generateWhitePawnMove(int square, U64 board, Move lastmove) {
+U64 generateWhitePawnMove(int square, U64 occupied) {
     U64 whitePawnMove = 0;
-    U64 black_board = black_occ(board);
+    U64 black_board = blackOccupied(currentState);
 
     // capture
     whitePawnMove |= ((1ULL << square) << 9) * ((BIT_A_FILE & (1ULL << square) << 9) == 0); 
     whitePawnMove |= ((1ULL << square) << 7) * ((BIT_H_FILE & (1ULL << square) << 7) == 0); 
     whitePawnMove &= black_board;  
     // en-passant
-    whitePawn = (((1ULL << square) << 9) & generateEnPassant()) * ((BIT_A_FILE & (1ULL << square) << 9) == 0); 
+    whitePawnMove |= (((1ULL << square) << 9) & generateEnPassant()) * ((BIT_A_FILE & (1ULL << square) << 9) == 0); 
+    whitePawnMove |= (((1ULL << square) << 7) & generateEnPassant()) * ((BIT_H_FILE & (1ULL << square) << 7) == 0);
     // direction
+    whitePawnMove |= (1ULL << square << 8) * (((1ULL << square << 8) & occupied) == 0); 
     // two move initial
-    return whitePawnMove = 0;
+    whitePawnMove |= (1ULL << square << 16) * (1ULL << square & BIT_2_RANK >= 0) * ((1ULL << square << 16) & occupied == 0);
+    return whitePawnMove;
 }
 
-U64 generateBlackPawnMove(int square, U64 board) {
+U64 generateBlackPawnMove(int square, U64 occupied) {
     U64 blackPawnMove = 0;
+    U64 white_board = whiteOccupied(currentState); 
     // capture
-    // en-passan
+    blackPawnMove |= ((1ULL << square) >> 9) * ((BIT_H_FILE & (1ULL << square) >> 9) == 0); 
+    blackPawnMove |= ((1ULL << square) >> 7) * ((BIT_A_FILE & (1ULL << square) >> 7) == 0); 
+    blackPawnMove &= white_board;  
+    // en-passant
+    blackPawnMove |= (((1ULL << square) >> 9) & generateEnPassant()) * ((BIT_H_FILE & (1ULL << square) >> 9) == 0); 
+    blackPawnMove |= (((1ULL << square) >> 7) & generateEnPassant()) * ((BIT_A_FILE & (1ULL << square) >> 7) == 0);
     // direction
+    blackPawnMove |= (1ULL << square >> 8) * (((1ULL << square >> 8) & occupied) == 0); 
     // two move initial
+    blackPawnMove |= (1ULL << square >> 16) * (1ULL << square & BIT_6_RANK >= 0);
     return blackPawnMove;
 }
 
@@ -307,8 +313,8 @@ void printGameBoard(State p) {
 
 // ------------------------------
 int main() {
-    State p = initializeState();
-    U64 occ = 0;
+    prevprevState = prevState = currentState = initializeState();
+    U64 occ = whiteOccupied(currentState) | blackOccupied(prevState);
     //printGameBoard(p);
 
     U64 testBit1 = 0x0000000080000000;
@@ -317,9 +323,13 @@ int main() {
     U64 temp = testBit1;
     int square = popLSB(&temp);
 
-    printBitboard(generateKingMove(square, occ));
-    printBitboard(generateRookMove(square, occ));
+    // printBitboard(generateKingMove(square, occ));
+    // printBitboard(generateRookMove(square, occ));
 
+    printBitboard(occ);
+    printBitboard(generateWhitePawnMove(square, occ));
+    temp = testBit1 << 24; 
+    printBitboard(generateWhitePawnMove(popLSB(&temp), occ));
     //printBitboard(generateBishopMove(square, occ));
     //printBitboard(generateQueenMove(square, occ));
 

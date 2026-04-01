@@ -30,4 +30,6 @@ typedef struct{
     int type;
 } Move;
 
-
+State currentState;
+State prevState;
+State prevprevState; 
