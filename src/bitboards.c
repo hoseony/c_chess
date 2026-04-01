@@ -72,7 +72,7 @@ void printBitboard(U64 board) {
 }
 
 // --------- Initialize Board ------------
-// This initialize the starting position of the board;
+// Initialize the starting position of the board;
 State initializeState() {
     State p;
     p.wp = 0x000000000000FF00;
@@ -228,8 +228,8 @@ U64 generateKingMove(int square, U64 occupied) {
 }
 
 U64 generateEnPassant() {
-   U64 en_passant = ((((currentState.wp ^ prevState.wp)) & currentState.wp) >> 8) * ((currentState.wp ^ prevState.wp) & BIT_2_RANK > 0);
-   en_passant |= ((((currentState.bp ^ prevState.bp)) & currentState.bp) << 8) * ((currentState.bp ^ prevState.bp) & BIT_6_RANK > 0);
+   U64 en_passant = ((((currentState.wp ^ prevState.wp)) & currentState.wp) >> 8) * (((currentState.wp ^ prevState.wp) & BIT_2_RANK) > 0);
+   en_passant |= ((((currentState.bp ^ prevState.bp)) & currentState.bp) << 8) * (((currentState.bp ^ prevState.bp) & BIT_7_RANK) > 0);
    return en_passant; 
 }
 
@@ -247,7 +247,7 @@ U64 generateWhitePawnMove(int square, U64 occupied) {
     // direction
     whitePawnMove |= (1ULL << square << 8) * (((1ULL << square << 8) & occupied) == 0); 
     // two move initial
-    whitePawnMove |= (1ULL << square << 16) * (1ULL << square & BIT_2_RANK >= 0) * ((1ULL << square << 16) & occupied == 0);
+    whitePawnMove |= (1ULL << square << 16) * (((1ULL << square & BIT_2_RANK) > 0)) * (((1ULL << square << 16) & occupied) == 0);
     return whitePawnMove;
 }
 
@@ -264,7 +264,7 @@ U64 generateBlackPawnMove(int square, U64 occupied) {
     // direction
     blackPawnMove |= (1ULL << square >> 8) * (((1ULL << square >> 8) & occupied) == 0); 
     // two move initial
-    blackPawnMove |= (1ULL << square >> 16) * (1ULL << square & BIT_6_RANK >= 0);
+    blackPawnMove |= (1ULL << square >> 16) * ((1ULL << square & BIT_7_RANK) > 0) * (((1ULL << square >> 16) & occupied) == 0);
     return blackPawnMove;
 }
 
@@ -317,8 +317,8 @@ int main() {
     U64 occ = whiteOccupied(currentState) | blackOccupied(prevState);
     //printGameBoard(p);
 
-    U64 testBit1 = 0x0000000080000000;
-    U64 testBit2 = 0x0000000010000000;
+    U64 testBit1 = 0x0080000000000000;
+    U64 testBit2 = 0x0000000000002000;
 
     U64 temp = testBit1;
     int square = popLSB(&temp);
@@ -326,10 +326,20 @@ int main() {
     // printBitboard(generateKingMove(square, occ));
     // printBitboard(generateRookMove(square, occ));
 
-    printBitboard(occ);
-    printBitboard(generateWhitePawnMove(square, occ));
-    temp = testBit1 << 24; 
-    printBitboard(generateWhitePawnMove(popLSB(&temp), occ));
+    //printBitboard(occ);
+    printBitboard(testBit1);
+    printBitboard(generateBlackPawnMove(square, occ));
+    //temp = testBit1 << 24; 
+    printBitboard(testBit2);
+    printBitboard(generateBlackPawnMove(popLSB(&testBit2), occ));
+
+
+    testBit2 = 0x0000000000200000;
+    printBitboard(testBit2);
+    printBitboard(generateBlackPawnMove(popLSB(&testBit2), occ));
+
+
+
     //printBitboard(generateBishopMove(square, occ));
     //printBitboard(generateQueenMove(square, occ));
 
