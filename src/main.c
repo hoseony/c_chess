@@ -53,15 +53,31 @@ U64 generateMoveFromTargetSquare(State *p, int targetSquare, U64 occupied) {
 
 int main() {
     currentState = prevState = prevprevState = initializeState();
-    char input[4] = {'f', '1', 'e', '4'};
+    char input[4] = {'e', '1', 'e', '4'};
     int from, to;
 
     U64 occupied = allOccupied(currentState);
+    U64 blackBoard = blackOccupied(currentState);
+    U64 whiteBoard = whiteOccupied(currentState);
 
     printGameBoard(currentState);
     parseLAN(input, &from, &to);
 
-    printBitboard(generateMoveFromTargetSquare(&currentState, from, occupied));
+    U64 candidateMoves = generateMoveFromTargetSquare(&currentState, from, occupied);
+    printBitboard(candidateMoves);
+
+    // This gives you actual moves that you can make (I hope)
+    possibleMoves = candidateMoves & ~whiteBoard
+    printBitboard(possibleMoves); 
+    // You AND with NOT of your pieces to discard friendly pieces
+    
+    // if your targetSquare is included in the possibleMoves,
+    // You should now check if that move result in check
+    // do, undo move
+    // making attack table
+    // see if king is in the attack table after the move
+    // If so, discard that move (set that bit to 0)
+    // and you have final legalMoves
 
     return 0;
 }
