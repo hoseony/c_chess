@@ -111,15 +111,11 @@ U64 allOccupied(State p) {
 // -------------------------------
 
 void printGameBoard(State p) {
-    printf("------ ");
-    if(p.turn == WHITE) {
-        printf("White to move");
-    } else {
-        printf("Black to move");
-    }
-    printf(" ------\n");
+
+    printf("------- chess -------\n");
 
     for(int i = 7; i >= 0; i--) {
+        printf("      ");
         for(int j = 0; j < 8; j++) {
             if (p.wp & (1ULL << (i * 8 + j))) printf("♟︎"); 
             else if (p.wn & (1ULL << (i * 8 + j))) printf("♞");
@@ -137,7 +133,16 @@ void printGameBoard(State p) {
             else printf("·");
         }
     printf("\n");
+
     }
+
+    printf("--- ");
+    if(p.turn == WHITE) {
+        printf("White to move");
+    } else {
+        printf("Black to move");
+    }
+    printf(" ---\n");
 }
 
 /*
