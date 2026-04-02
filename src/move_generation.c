@@ -13,6 +13,8 @@ U64 generateEnPassant();
 U64 generateWhitePawnMove(int square, U64 occupied);
 U64 generateBlackPawnMove(int square, U64 occupied);
 U64 pawnPromotion(U64 board);
+U64 blackAttackBoard(State p);
+U64 whiteAttackBoard(State p);
 
 // --------- generate move ----------
 
@@ -158,6 +160,22 @@ U64 generateWhitePawnMove(int square, U64 occupied) {
     return whitePawnMove;
 }
 
+U64 generateWhitePawnAttack(int square) {
+    U64 whitePawnAttack = 0;
+    whitePawnAttack |= ((1ULL << square) << 9) * ((BIT_A_FILE & (1ULL << square) << 9) == 0); 
+    whitePawnAttack |= ((1ULL << square) << 7) * ((BIT_H_FILE & (1ULL << square) << 7) == 0); 
+    return whitePawnAttack;  
+}
+
+U64 generateBlackPawnAttack(int square) {
+    U64 blackPawnAttack = 0;
+    U64 white_board = whiteOccupied(currentState); 
+    // capture
+    blackPawnAttack |= ((1ULL << square) >> 9) * ((BIT_H_FILE & (1ULL << square) >> 9) == 0); 
+    blackPawnAttack |= ((1ULL << square) >> 7) * ((BIT_A_FILE & (1ULL << square) >> 7) == 0); 
+    return blackPawnAttack;  
+}
+
 U64 generateBlackPawnMove(int square, U64 occupied) {
     U64 blackPawnMove = 0;
     U64 white_board = whiteOccupied(currentState); 
@@ -185,3 +203,90 @@ U64 pawnPromotion(U64 board) {
     return 0;
 }
 
+// --------------------------------------------------
+
+U64 blackAttackBoard(State p) {
+    U64 attackTable = 0;
+    U64 occupied = allOccupied(p);
+    
+    U64 temp = p.bp;
+    while(temp) {
+        int square = popLSB(&temp);
+        attackTable |= generateBlackPawnAttack(square);
+    }
+
+    temp = p.bn;
+    while(temp) {
+        int square = popLSB(&temp);
+        attackTable |= generateKnightMove(square);
+    }
+
+    temp = p.bb;
+    while(temp) {
+        int square = popLSB(&temp);
+        attackTable |= generateBishopMove(square, occupied);
+    }
+
+    temp = p.br;
+    while(temp) {
+        int square = popLSB(&temp);
+        attackTable |= generateRookMove(square, occupied);
+    }
+
+    temp = p.bq;
+    while(temp) {
+        int square = popLSB(&temp);
+        attackTable |= generateQueenMove(square, occupied);
+    }
+
+    temp = p.bk;
+    while(temp) {
+        int square = popLSB(&temp);
+        attackTable |= generateKingMove(square);
+    }
+
+    return (attackTable);
+}
+
+U64 whiteAttackBoard(State p) {
+    U64 attackTable = 0;
+    U64 occupied = allOccupied(p);
+    
+    U64 temp = p.wp;
+    while(temp) {
+        int square = popLSB(&temp);
+        attackTable |= generateWhitePawnAttack(square);
+    }
+
+    temp = p.wn;
+    while(temp) {
+        int square = popLSB(&temp);
+        attackTable |= generateKnightMove(square);
+    }
+
+    temp = p.wb;
+    while(temp) {
+        int square = popLSB(&temp);
+        attackTable |= generateBishopMove(square, occupied);
+    }
+
+    temp = p.wr;
+    while(temp) {
+        int square = popLSB(&temp);
+        attackTable |= generateRookMove(square, occupied);
+    }
+
+    temp = p.wq;
+    while(temp) {
+        int square = popLSB(&temp);
+        attackTable |= generateQueenMove(square, occupied);
+    }
+
+    temp = p.wk;
+    while(temp) {
+        int square = popLSB(&temp);
+        attackTable |= generateKingMove(square);
+    }
+
+    return (attackTable);
+}

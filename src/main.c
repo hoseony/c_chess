@@ -50,6 +50,11 @@ U64 generateMoveFromTargetSquare(State *p, int targetSquare, U64 occupied) {
     }
 }
 
+void doMove() {
+
+}
+
+
 
 int main() {
     currentState = prevState = prevprevState = initializeState();
@@ -67,15 +72,15 @@ int main() {
     printBitboard(candidateMoves);
 
     // This gives you actual moves that you can make (I hope)
-    possibleMoves = candidateMoves & ~whiteBoard
-    printBitboard(possibleMoves); 
     // You AND with NOT of your pieces to discard friendly pieces
+    U64 possibleMoves = candidateMoves & ~whiteBoard;
+    printBitboard(possibleMoves); 
     
-    // if your targetSquare is included in the possibleMoves,
+    // if your targetSquare is included in the possibleMoves (if the move is somewhat valid)
     // You should now check if that move result in check
-    // do, undo move
-    // making attack table
-    // see if king is in the attack table after the move
+    // This will be done with do, undo move
+    // Then see if king is in the attackBoard after the move
+    // I already made whiteAttackBoard and blackAttackBoard
     // If so, discard that move (set that bit to 0)
     // and you have final legalMoves
 

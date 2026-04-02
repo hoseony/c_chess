@@ -6,6 +6,7 @@
 #include "constants.h" 
 #include "types.h" 
 #include "move_generation.h"
+#include "fen.c"
 
 //-------- function prototype ----------
 void putBit(U64 *board, Board_pos pos);
@@ -148,6 +149,8 @@ void printGameBoard(State p) {
 /*
 int main() {
     prevprevState = prevState = currentState = initializeState();
+    char fen[] = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
+    currentState = fenToState(fen);
     U64 occ = whiteOccupied(currentState) | blackOccupied(prevState);
     //printGameBoard(p);
 
@@ -161,17 +164,21 @@ int main() {
     // printBitboard(generateRookMove(square, occ));
 
     //printBitboard(occ);
-    printBitboard(testBit1);
-    printBitboard(generateBlackPawnMove(square, occ));
+    // printBitboard(testBit1);
+    // printBitboard(generateBlackPawnMove(square, occ));
     //temp = testBit1 << 24; 
-    printBitboard(testBit2);
-    printBitboard(generateBlackPawnMove(popLSB(&testBit2), occ));
+    // printBitboard(testBit2);
+    // printBitboard(generateBlackPawnMove(popLSB(&testBit2), occ));
 
 
     testBit2 = 0x0000000000200000;
     printBitboard(testBit2);
-    printBitboard(generateBlackPawnMove(popLSB(&testBit2), occ));
+//    printBitboard(generateBlackPawnMove(popLSB(&testBit2), occ));
 
+    printBitboard(generateWhitePawnAttack(popLSB(&testBit2)));
+
+    printBitboard(blackAttackBoard(currentState));
+    printBitboard(whiteAttackBoard(currentState));
 
 
     //printBitboard(generateBishopMove(square, occ));
@@ -185,4 +192,5 @@ int main() {
     // This will be computationally faster than the way we were doing previously
     return 0;
 }
+
 */

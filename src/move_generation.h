@@ -14,5 +14,9 @@ U64 generateEnPassant();
 U64 generateWhitePawnMove(int square, U64 occupied);
 U64 generateBlackPawnMove(int square, U64 occupied);
 U64 pawnPromotion(U64 board);
+U64 generateWhitePawnAttack(int square);
+U64 generateBlackPawnAttack(int square);
+U64 blackAttackBoard(State p);
+U64 whiteAttackBoard(State p);
 
 #endif
