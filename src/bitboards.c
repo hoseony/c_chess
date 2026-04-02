@@ -140,7 +140,7 @@ void printGameBoard(State p) {
     }
 }
 
-
+/*
 int main() {
     prevprevState = prevState = currentState = initializeState();
     U64 occ = whiteOccupied(currentState) | blackOccupied(prevState);
@@ -180,4 +180,4 @@ int main() {
     // This will be computationally faster than the way we were doing previously
     return 0;
 }
-
+*/
