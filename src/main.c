@@ -88,28 +88,35 @@ void doMove(State *p, int from, int to) {
 
 int main() {
     currentState = prevState = prevprevState = initializeState();
-    char input[4] = {'e', '2', 'e', '4'};
+    // char input[4] = {'e', '2', 'e', '3'};
+    char input[4];
+
+    printGameBoard(currentState);
     int from, to;
 
+while(1) {
+    scanf("%s", input);
     U64 occupied = allOccupied(currentState);
     U64 blackBoard = blackOccupied(currentState);
     U64 whiteBoard = whiteOccupied(currentState);
 
-    printGameBoard(currentState);
     parseLAN(input, &from, &to);
 
     U64 candidateMoves = generateMoveFromTargetSquare(&currentState, from, occupied);
-    printBitboard(candidateMoves);
-
     // This gives you actual moves that you can make (I hope)
     // You AND with NOT of your pieces to discard friendly pieces
     U64 possibleMoves = candidateMoves & ~whiteBoard;
-    printBitboard(possibleMoves);
-
-    doMove(&currentState, from, to);
-    printGameBoard(currentState);
-    printBitboard(currentState.wp);
+    // printBitboard(possibleMoves);
     
+    if( (1ULL << to) & possibleMoves) {
+        doMove(&currentState, from, to);
+    } else {
+        printf("invalid move\n");
+    }
+
+    printGameBoard(currentState);
+    // printBitboard(currentState.wp);
+}
     // if your targetSquare is included in the possibleMoves (if the move is somewhat valid)
     // You should now check if that move result in check
     // This will be done with do, undo move
