@@ -35,6 +35,11 @@ typedef struct{
     int type;
 } Move;
 
+typedef union {
+    State s; 
+    U64 pieces[12]; 
+} stateUnion; 
+
 State currentState;
 State prevState;
 State prevprevState; 

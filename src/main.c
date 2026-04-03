@@ -50,15 +50,45 @@ U64 generateMoveFromTargetSquare(State *p, int targetSquare, U64 occupied) {
     }
 }
 
-void doMove() {
+void doMove(State *p, int from, int to) {
+    U64 enPassantBitboard = generateEnPassant();
 
+    U64 fromBoard = (1ULL << from);
+    U64 toBoard = (1ULL << to);
+
+    // enPassant Caputre
+    if(toBoard & enPassantBitboard) {
+        if(p->turn == WHITE) {
+            moveBit(&p->wp, from, to);
+            removeBit(&p->bp, (to - 8));
+        } else {
+            moveBit(&p->bp, from, to);
+            removeBit(&p->bp, (to + 8));
+        }
+        printf("hello");
+    } else {
+        // regular stuff
+        // placing the move to the board
+        stateUnion su; 
+        su.s = *p;
+
+        // find what piece moved
+        size_t pieceMoved = 0; 
+        for (size_t i = 0; i < 12; i++) 
+            pieceMoved += i * ((su.pieces[i] & fromBoard) > 0); 
+
+        // move it
+        moveBit(&(su.pieces[pieceMoved]), from, to);
+        *p = su.s;
+        p->turn = !p->turn;
+    }
 }
 
 
 
 int main() {
     currentState = prevState = prevprevState = initializeState();
-    char input[4] = {'e', '1', 'e', '4'};
+    char input[4] = {'e', '2', 'e', '4'};
     int from, to;
 
     U64 occupied = allOccupied(currentState);
@@ -74,7 +104,11 @@ int main() {
     // This gives you actual moves that you can make (I hope)
     // You AND with NOT of your pieces to discard friendly pieces
     U64 possibleMoves = candidateMoves & ~whiteBoard;
-    printBitboard(possibleMoves); 
+    printBitboard(possibleMoves);
+
+    doMove(&currentState, from, to);
+    printGameBoard(currentState);
+    printBitboard(currentState.wp);
     
     // if your targetSquare is included in the possibleMoves (if the move is somewhat valid)
     // You should now check if that move result in check
@@ -83,6 +117,6 @@ int main() {
     // I already made whiteAttackBoard and blackAttackBoard
     // If so, discard that move (set that bit to 0)
     // and you have final legalMoves
-
+    // Check check before and after move :)
     return 0;
 }
