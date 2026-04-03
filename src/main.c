@@ -56,14 +56,17 @@ void doMove(State *p, int from, int to) {
     U64 fromBoard = (1ULL << from);
     U64 toBoard = (1ULL << to);
 
+    bool wasThatWhitePawn = ((p->wp & fromBoard) > 0);
+    bool wasThatBlackPawn = ((p->bp & fromBoard) > 0);
+
     // enPassant Caputre
-    if(toBoard & enPassantBitboard) {
+    if( (toBoard & enPassantBitboard) && ( (wasThatWhitePawn) || (wasThatBlackPawn) )) {
         if(p->turn == WHITE) {
             moveBit(&p->wp, from, to);
             removeBit(&p->bp, (to - 8));
         } else {
             moveBit(&p->bp, from, to);
-            removeBit(&p->bp, (to + 8));
+            removeBit(&p->wp, (to + 8));
         }
         printf("hello");
     } else {
@@ -74,14 +77,16 @@ void doMove(State *p, int from, int to) {
 
         // find what piece moved
         size_t pieceMoved = 0; 
-        for (size_t i = 0; i < 12; i++) 
-            pieceMoved += i * ((su.pieces[i] & fromBoard) > 0); 
+        for (size_t i = 0; i < 12; i++) {
+            pieceMoved += i * ((su.pieces[i] & fromBoard) > 0);
+            removeBit(&(su.pieces[i]), to);
+        }
 
         // move it
         moveBit(&(su.pieces[pieceMoved]), from, to);
         *p = su.s;
-        p->turn = !p->turn;
     }
+    p->turn = !p->turn;
 }
 
 
@@ -89,13 +94,13 @@ void doMove(State *p, int from, int to) {
 int main() {
     currentState = prevState = prevprevState = initializeState();
     // char input[4] = {'e', '2', 'e', '3'};
-    char input[4];
+    char input[5];
 
     printGameBoard(currentState);
     int from, to;
 
 while(1) {
-    scanf("%s", input);
+    scanf("%4s", input);
     U64 occupied = allOccupied(currentState);
     U64 blackBoard = blackOccupied(currentState);
     U64 whiteBoard = whiteOccupied(currentState);
@@ -105,11 +110,16 @@ while(1) {
     U64 candidateMoves = generateMoveFromTargetSquare(&currentState, from, occupied);
     // This gives you actual moves that you can make (I hope)
     // You AND with NOT of your pieces to discard friendly pieces
-    U64 possibleMoves = candidateMoves & ~whiteBoard;
-    // printBitboard(possibleMoves);
+    
+    U64 possibleMoves = (currentState.turn == WHITE)? (candidateMoves & ~whiteBoard) : (candidateMoves & ~blackBoard);
+    printBitboard(possibleMoves);
     
     if( (1ULL << to) & possibleMoves) {
+        State temp = currentState;
         doMove(&currentState, from, to);
+        prevprevState = prevState;
+        prevState = temp;
+
     } else {
         printf("invalid move\n");
     }
