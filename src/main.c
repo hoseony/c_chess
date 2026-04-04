@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 bool parseLAN(char *input, int *fromSquare, int *toSquare) {
     int fromFile = input[0] - 'a';
@@ -20,6 +21,7 @@ bool parseLAN(char *input, int *fromSquare, int *toSquare) {
     return 1;
 }
 
+// Note to Thomas: Make more efficient 
 U64 generateMoveFromTargetSquare(State *p, int targetSquare, U64 occupied) {
     
     U64 square = (1ULL << targetSquare);
@@ -44,7 +46,7 @@ U64 generateMoveFromTargetSquare(State *p, int targetSquare, U64 occupied) {
         return generateQueenMove(targetSquare, occupied);
     }
     else if((square & p->wk) || (square & p->bk)) {
-        return generateKingMove(targetSquare);
+        return generateKingMove(targetSquare) | ((generateWhiteKingCastleMove(*p) * ((square & p->wk) > 0) + generateBlackKingCastleMove(*p) * ((square & p->bk) > 0)));
     } else {
         return 0;
     }
@@ -59,8 +61,11 @@ void doMove(State *p, int from, int to) {
     bool wasThatWhitePawn = ((p->wp & fromBoard) > 0);
     bool wasThatBlackPawn = ((p->bp & fromBoard) > 0);
 
-    // enPassant Caputre
-    if( (toBoard & enPassantBitboard) && ( (wasThatWhitePawn) || (wasThatBlackPawn) )) {
+    bool wasThatWhiteKing = ((p->wk & fromBoard) > 0);
+    bool wasThatBlackKing = ((p->bk & fromBoard) > 0);
+
+    // enPassant Caputre and Move
+    if ( (toBoard & enPassantBitboard) && ( (wasThatWhitePawn) || (wasThatBlackPawn) )) {
         if(p->turn == WHITE) {
             moveBit(&p->wp, from, to);
             removeBit(&p->bp, (to - 8));
@@ -68,9 +73,23 @@ void doMove(State *p, int from, int to) {
             moveBit(&p->bp, from, to);
             removeBit(&p->wp, (to + 8));
         }
-        printf("hello");
-    } else {
-        // regular stuff
+    } else if ( (wasThatWhiteKing) && (abs(to - from) == 2) ) { // wow, white castled
+        moveBit(&(p->wk), from, to);
+
+        if (to == 6) { // king side
+            moveBit(&(p->wr), 7, 5); // hardcoded square
+        } else { // queen side
+            moveBit(&(p->wr), 0, 3);
+        }
+    } else if ( (wasThatBlackKing) && (abs(to - from) == 2) ) { // wow, black castled
+        moveBit(&(p->bk), from, to);
+
+        if(to == 62) { // king side
+            moveBit(&(p->br), 63, 61);
+        } else {
+            moveBit(&(p->br), 56, 59);
+        }
+    } else { // regular moves
         // placing the move to the board
         StateUnion su; 
         su.s = *p;
@@ -86,6 +105,30 @@ void doMove(State *p, int from, int to) {
         moveBit(&(su.pieces[pieceMoved]), from, to);
         *p = su.s;
     }
+
+    // remove castling right
+    // White
+    if (wasThatWhiteKing) {
+        p->castleState &= 0b0011;
+    }
+    if (fromBoard & (1ULL << 7)) {
+        p->castleState &= 0b0111;
+    }
+    if (fromBoard & (1ULL << 0)) {
+        p->castleState &= 0b1011;
+    }
+    
+    // Black
+    if (wasThatBlackKing) {
+        p->castleState &=0b1100;
+    }
+    if (fromBoard & (1ULL << 63)) {
+        p->castleState &= 0b1101;
+    }
+    if (fromBoard & (1ULL << 56)) {
+        p->castleState &= 0b1110;
+    }
+
     p->turn = !p->turn;
 }
 
@@ -93,40 +136,51 @@ void doMove(State *p, int from, int to) {
 
 int main() {
     currentState = prevState = prevprevState = initializeState();
+
+
+    char startingPosition[] = "r1bqk2r/pppp1ppp/2n2n2/1B2p3/1b2P3/2N2N2/PPPP1PPP/R1BQK2R w KQkq - 6 5";
+    currentState = fenToState(startingPosition);
+
+    char prevPosition[] = "r1bqkb1r/pppp1ppp/2n2n2/1B2p3/4P3/2N2N2/PPPP1PPP/R1BQK2R b KQkq - 5 4";
+    prevState = fenToState(prevPosition);
+
+    char prevprevPosition[] = "r1bqkb1r/pppp1ppp/2n2n2/4p3/4P3/2N2N2/PPPP1PPP/R1BQKB1R w KQkq - 4 4";
+    prevprevState = fenToState(prevprevPosition);
+
     // char input[4] = {'e', '2', 'e', '3'};
     char input[5];
 
     printGameBoard(currentState);
     int from, to;
 
-while(1) {
-    scanf("%4s", input);
-    U64 occupied = allOccupied(currentState);
-    U64 blackBoard = blackOccupied(currentState);
-    U64 whiteBoard = whiteOccupied(currentState);
+    while(1) {
+        scanf("%4s", input);
+        U64 occupied = allOccupied(currentState);
+        U64 blackBoard = blackOccupied(currentState);
+        U64 whiteBoard = whiteOccupied(currentState);
 
-    parseLAN(input, &from, &to);
+        parseLAN(input, &from, &to);
 
-    U64 candidateMoves = generateMoveFromTargetSquare(&currentState, from, occupied);
-    // This gives you actual moves that you can make (I hope)
-    // You AND with NOT of your pieces to discard friendly pieces
-    
-    U64 possibleMoves = (currentState.turn == WHITE)? (candidateMoves & ~whiteBoard) : (candidateMoves & ~blackBoard);
-    printBitboard(possibleMoves);
-    
-    if( (1ULL << to) & possibleMoves) {
-        State temp = currentState;
-        doMove(&currentState, from, to);
-        prevprevState = prevState;
-        prevState = temp;
+        U64 candidateMoves = generateMoveFromTargetSquare(&currentState, from, occupied);
+        // This gives you actual moves that you can make (I hope)
+        // You AND with NOT of your pieces to discard friendly pieces
+        
+        U64 possibleMoves = (currentState.turn == WHITE)? (candidateMoves & ~whiteBoard) : (candidateMoves & ~blackBoard);
+        //printBitboard(possibleMoves);
+        
+        if( (1ULL << to) & possibleMoves) {
+            State temp = currentState;
+            doMove(&currentState, from, to);
+            prevprevState = prevState;
+            prevState = temp;
 
-    } else {
-        printf("invalid move\n");
+        } else {
+            printf("invalid move\n");
+        }
+
+        printGameBoard(currentState);
+        // printBitboard(currentState.wp);
     }
-
-    printGameBoard(currentState);
-    // printBitboard(currentState.wp);
-}
     // if your targetSquare is included in the possibleMoves (if the move is somewhat valid)
     // You should now check if that move result in check
     // This will be done with do, undo move
