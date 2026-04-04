@@ -45,18 +45,18 @@ inline static int indexGrid(int rank, int file) {
     return rank * 8 + file; 
 }
 
-static void drawGameboard() {
-    piecesTextureID id = WHITE_PAWN; 
+static void drawGameboard(Texture2D *pieces) {
+    enum piecesTextureID id = WHITE_PAWN; 
     Rectangle sourceRec = {0.0f, 0.0f, (float)pieces[id].width, (float)pieces[id].height};
     int piecePosition; 
     // draw pawn
     StateUnion tempStateUnion; 
     tempStateUnion.s = currentState; 
     for (int i = 0; i < 12; i++) {
-        while (tempStateUnion[i] > 0) {
-            piecePosition = popLSB(&tempState.wp);
-            DrawRectanglePro(piecesTexture[id], sourceRec, (Rectangle){piecePosition / 8, piecePosition % 8, gridSquareLength, 
-                    gridSquareLength}, {(float)pieces[id].width, (float)pieces[id].height}, 0.0f, (Color){255, 255, 255, 0}); 
+        while (tempStateUnion.pieces[i] > 0) {
+            piecePosition = popLSB((tempStateUnion.pieces)+i);
+            DrawTexturePro(pieces[id], sourceRec, (Rectangle){piecePosition / 8, piecePosition % 8, gridSquareLength, 
+                    gridSquareLength}, (Vector2){(float)pieces[id].width, (float)pieces[id].height}, 0.0f, (Color){255, 255, 255, 0}); 
         }
     }
 }
