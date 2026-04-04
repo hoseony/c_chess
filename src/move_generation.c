@@ -17,6 +17,7 @@ U64 blackAttackBoard(State p);
 U64 whiteAttackBoard(State p);
 U64 generateBlackKingCastleMove(State p);
 U64 generateWhiteKingCastleMove(State p);
+bool isInCheck(State p);
 
 // --------- generate move ----------
 
@@ -123,8 +124,6 @@ U64 generateQueenMove(int square, U64 occupied) {
 
 U64 generateKingMove(int square) {
     U64 kingMove = 0;
-    int file = square % 8;
-    int rank = square / 8;
     
     kingMove |= (1ULL << (square + 1)) * !(BIT_H_FILE & (1ULL << square));
     kingMove |= (1ULL << (square - 1)) * !(BIT_A_FILE & (1ULL << square));
@@ -171,8 +170,6 @@ U64 generateWhitePawnAttack(int square) {
 
 U64 generateBlackPawnAttack(int square) {
     U64 blackPawnAttack = 0;
-    U64 white_board = whiteOccupied(currentState); 
-    // capture
     blackPawnAttack |= ((1ULL << square) >> 9) * ((BIT_H_FILE & (1ULL << square) >> 9) == 0); 
     blackPawnAttack |= ((1ULL << square) >> 7) * ((BIT_A_FILE & (1ULL << square) >> 7) == 0); 
     return blackPawnAttack;  
@@ -339,4 +336,12 @@ U64 whiteAttackBoard(State p) {
     }
 
     return (attackTable);
+}
+
+bool isInCheck(State p) {
+    if (p.turn == WHITE) {
+        return ((p.wk & blackAttackBoard(p)) > 0);
+    } else {
+        return ((p.bk & whiteAttackBoard(p)) > 0);
+    }
 }

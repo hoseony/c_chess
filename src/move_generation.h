@@ -20,5 +20,6 @@ U64 blackAttackBoard(State p);
 U64 whiteAttackBoard(State p);
 U64 generateBlackKingCastleMove(State p);
 U64 generateWhiteKingCastleMove(State p);
+bool isInCheck(State p);
 
 #endif

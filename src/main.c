@@ -63,6 +63,24 @@ void doMove(State *p, int from, int to) {
 
     bool wasThatWhiteKing = ((p->wk & fromBoard) > 0);
     bool wasThatBlackKing = ((p->bk & fromBoard) > 0);
+    
+    U64 wasThatCapture = 0;
+
+    StateUnion su; 
+    su.s = *p;
+
+    int threeFold = p->threeMoveRepetition;
+    int fiftyMove = p->fiftyMoveRule;
+
+    for (int i = 0; i < 12; i++) {
+        wasThatCapture |= (su.pieces[i] & toBoard);
+    }
+    if (wasThatCapture || wasThatWhitePawn || wasThatBlackPawn) {
+        fiftyMove = 0;
+        printf("that was not fifty\n");
+    } else {
+        fiftyMove++;
+    }
 
     // enPassant Caputre and Move
     if ( (toBoard & enPassantBitboard) && ( (wasThatWhitePawn) || (wasThatBlackPawn) )) {
@@ -90,15 +108,11 @@ void doMove(State *p, int from, int to) {
             moveBit(&(p->br), 56, 59);
         }
     } else { // regular moves
-        // placing the move to the board
-        StateUnion su; 
-        su.s = *p;
-
         // find what piece moved
         size_t pieceMoved = 0; 
         for (size_t i = 0; i < 12; i++) {
             pieceMoved += i * ((su.pieces[i] & fromBoard) > 0);
-            removeBit(&(su.pieces[i]), to);
+            removeBit(&(su.pieces[i]), to); //captures the thing if capture
         }
 
         // move it
@@ -130,14 +144,17 @@ void doMove(State *p, int from, int to) {
     }
 
     p->turn = !p->turn;
+    // because of the way we wrote this code, we kind of need to do this 
+    // I didn't want to fix it lol
+    p->fiftyMoveRule = fiftyMove;
+    p->threeMoveRepetition = threeFold;
 }
 
 
 
 int main() {
     currentState = prevState = prevprevState = initializeState();
-
-
+/*
     char startingPosition[] = "r1bqk2r/pppp1ppp/2n2n2/1B2p3/1b2P3/2N2N2/PPPP1PPP/R1BQK2R w KQkq - 6 5";
     currentState = fenToState(startingPosition);
 
@@ -146,7 +163,7 @@ int main() {
 
     char prevprevPosition[] = "r1bqkb1r/pppp1ppp/2n2n2/4p3/4P3/2N2N2/PPPP1PPP/R1BQKB1R w KQkq - 4 4";
     prevprevState = fenToState(prevprevPosition);
-
+*/
     // char input[4] = {'e', '2', 'e', '3'};
     char input[5];
 
@@ -164,30 +181,34 @@ int main() {
         U64 candidateMoves = generateMoveFromTargetSquare(&currentState, from, occupied);
         // This gives you actual moves that you can make (I hope)
         // You AND with NOT of your pieces to discard friendly pieces
-        
-        U64 possibleMoves = (currentState.turn == WHITE)? (candidateMoves & ~whiteBoard) : (candidateMoves & ~blackBoard);
-        //printBitboard(possibleMoves);
+        U64 possibleMoves = (currentState.turn == WHITE) ? (candidateMoves & ~whiteBoard) : (candidateMoves & ~blackBoard);
+        // This is the pseudo-legal move (legal move without checking check)
         
         if( (1ULL << to) & possibleMoves) {
+
+            // three repetition
+            // 50 move rules
+
             State temp = currentState;
-            doMove(&currentState, from, to);
-            prevprevState = prevState;
-            prevState = temp;
+            doMove(&currentState, from, to); // Try the move
+            
+            State afterMove = currentState;
+            afterMove.turn = !afterMove.turn;
+
+            if (isInCheck(afterMove)) { // Undo the move 
+                currentState = temp;
+                printf("Illegal Move; King Check\n");
+            } else { // Domove
+                prevprevState = prevState;
+                prevState = temp;
+            }
 
         } else {
             printf("invalid move\n");
         }
 
         printGameBoard(currentState);
-        // printBitboard(currentState.wp);
     }
-    // if your targetSquare is included in the possibleMoves (if the move is somewhat valid)
-    // You should now check if that move result in check
-    // This will be done with do, undo move
-    // Then see if king is in the attackBoard after the move
-    // I already made whiteAttackBoard and blackAttackBoard
-    // If so, discard that move (set that bit to 0)
-    // and you have final legalMoves
-    // Check check before and after move :)
+
     return 0;
 }
