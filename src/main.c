@@ -72,7 +72,7 @@ void doMove(State *p, int from, int to) {
     } else {
         // regular stuff
         // placing the move to the board
-        stateUnion su; 
+        StateUnion su; 
         su.s = *p;
 
         // find what piece moved

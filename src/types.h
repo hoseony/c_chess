@@ -38,7 +38,7 @@ typedef struct{
 typedef union {
     State s; 
     U64 pieces[12]; 
-} stateUnion; 
+} StateUnion; 
 
 State currentState;
 State prevState;
