@@ -2,8 +2,13 @@
 #include "types.h"
 
 State fenToState(char *fen) {
+
+    // This function currently parses until         here->| 
+    // rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1
+
     State state = {0};
     int squareIndex = 56;
+    state.castleState = 0b0000;
 
     while(*fen != ' ') {
         char c = *fen++;
@@ -15,7 +20,7 @@ State fenToState(char *fen) {
         } else {
             switch(c) {
                 case 'p': state.bp |= (1ULL << squareIndex); break;
-                case 'n': state.bn |= (1ULL << squareIndex); break;
+                case 'n': state.bn |= (2ULL << squareIndex); break;
                 case 'b': state.bb |= (1ULL << squareIndex); break;
                 case 'r': state.br |= (1ULL << squareIndex); break;
                 case 'q': state.bq |= (1ULL << squareIndex); break;
@@ -36,10 +41,32 @@ State fenToState(char *fen) {
         fen++;
     }
 
-    state.turn = (*fen = 'b') ? BLACK : WHITE;
+    state.turn = (*fen == 'b') ? BLACK : WHITE;
+    fen++;
+
+    while(*fen == ' ') {
+        fen++;
+    }
+
+    for(; *fen != ' '; fen++) {
+        switch(*fen) {
+            case 'K': // White King Side
+                state.castleState += 0b1000;
+                break;
+            case 'Q': // White Queen Side
+                state.castleState += 0b0100;
+                break;
+            case 'k': // Black King Side
+                state.castleState += 0b0010;
+                break;
+            case 'q': // Black Queen Side
+                state.castleState += 0b0001;
+                break;
+            default:
+                state.castleState = 0b0000;
+                break;
+        }
+    }
+
     return state;
-    
-    // I still haven't added casteling part
-    // It just parse until                     here->| 
-    // rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1
 }

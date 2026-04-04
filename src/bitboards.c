@@ -90,7 +90,13 @@ State initializeState() {
     p.br = 0x8100000000000000;
     p.bq = 0x0800000000000000;
     p.bk = 0x1000000000000000;
+
     p.turn = WHITE;
+
+    p.castleState = 0b1111;
+    p.fiftyMoveRule = 0;
+    p.threeMoveRepetition = 0;
+
     return p;
 }
 
@@ -142,7 +148,15 @@ void printGameBoard(State p) {
     } else {
         printf("Black to move");
     }
-    printf(" ---\n");
+    printf(" ---\n\n");
+
+
+    printf("************ debug infos ***********\n");
+    printf("    p.castleState: 0X%X\n", p.castleState);
+    printf("    p.turn: %d\n", p.turn);
+    printf("    p.fiftyMoveRule: %d\n", p.fiftyMoveRule);
+    printf("    p.threeMoveRepetition: %d\n", p.threeMoveRepetition);
+    printf("************************************\n");
 }
 
 /*

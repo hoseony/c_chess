@@ -18,5 +18,7 @@ U64 generateWhitePawnAttack(int square);
 U64 generateBlackPawnAttack(int square);
 U64 blackAttackBoard(State p);
 U64 whiteAttackBoard(State p);
+U64 generateBlackKingCastleMove(State p);
+U64 generateWhiteKingCastleMove(State p);
 
 #endif

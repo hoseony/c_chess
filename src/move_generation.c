@@ -15,6 +15,8 @@ U64 generateBlackPawnMove(int square, U64 occupied);
 U64 pawnPromotion(U64 board);
 U64 blackAttackBoard(State p);
 U64 whiteAttackBoard(State p);
+U64 generateBlackKingCastleMove(State p);
+U64 generateWhiteKingCastleMove(State p);
 
 // --------- generate move ----------
 
@@ -191,6 +193,54 @@ U64 generateBlackPawnMove(int square, U64 occupied) {
     // two move initial
     blackPawnMove |= (1ULL << square >> 16) * ((1ULL << square & BIT_7_RANK) > 0) * (((1ULL << square >> 16) & occupied) == 0);
     return blackPawnMove;
+}
+
+U64 generateWhiteKingCastleMove(State p) {
+    U64 castlingMove = 0;
+    U64 occupied = allOccupied(p);
+    U64 blackAttack = blackAttackBoard(p);
+
+    if (p.castleState == 0b0000) {
+        return 0;
+    }
+
+    if (p.castleState & 0b1000) {
+        if ( !(occupied & ((1ULL << 5) | (1ULL << 6))) && !(blackAttack & ((1ULL << 4) | (1ULL << 5) | (1ULL << 6))) ) {
+            castlingMove |= (1ULL << 6);
+        }
+    }
+
+    if (p.castleState & 0b0100) {
+        if ( !(occupied & ((1ULL << 1) | (1ULL << 2) | (1ULL << 3))) && !(blackAttack & ((1ULL << 2) | (1ULL << 3) | (1ULL << 4))) ) {
+            castlingMove |= (1ULL << 2);
+        }
+    }
+
+    return castlingMove;
+}
+
+U64 generateBlackKingCastleMove(State p) {
+    U64 castlingMove = 0;
+    U64 occupied = allOccupied(p);
+    U64 whiteAttack = whiteAttackBoard(p);
+
+    if (p.castleState == 0b0000) {
+        return 0;
+    }
+
+    if (p.castleState & 0b0010) {
+        if ( !(occupied & ((1ULL << 61) | (1ULL << 62))) && !(whiteAttack & ((1ULL << 60) | (1ULL << 61) | (1ULL << 62))) ) {
+            castlingMove |= (1ULL << 62);
+        }
+    }
+
+    if (p.castleState & 0b0001) {
+        if ( !(occupied & ((1ULL << 57) | (1ULL << 58) | (1ULL << 59))) && !(whiteAttack & ((1ULL << 58) | (1ULL << 59) | (1ULL << 60))) ) {
+            castlingMove |= (1ULL << 58);
+        }
+    }
+
+    return castlingMove;
 }
 
 U64 pawnPromotion(U64 board) {
