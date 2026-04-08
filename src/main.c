@@ -81,7 +81,7 @@ void doMove(State *p, int from, int to) {
     }
     if (wasThatCapture || wasThatWhitePawn || wasThatBlackPawn) {
         fiftyMove = 0;
-        printf("that was not fifty\n");
+        // printf("that was not fifty\n");
     } else {
         fiftyMove++;
     }
@@ -160,12 +160,52 @@ void doMove(State *p, int from, int to) {
 
     p->turn = !p->turn;
     // because of the way we wrote this code, we kind of need to do this 
-    // I didn't want to fix it lol
+    // I didn't want to fix it lol, very stupid
     p->fiftyMoveRule = fiftyMove;
     p->threeMoveRepetition = threeFold;
 }
 
 
+int areYouMated(State *p) { 
+    // This can be done by asking, "do you have any move that can get you out from the check?"
+    // first, check if you are in check, if you are not, you can not be mated.
+
+    State state = *p;
+
+    if (isInCheck(state) == 0) {
+        return 0;
+    }
+
+    U64 occupied = allOccupied(state);
+    U64 friendlyBoard = (state.turn == WHITE) ? whiteOccupied(state) : blackOccupied(state);
+
+    // the, for every piece you have, let's find possible moves, and move them here and there
+    // If you moved it, and stil in check for 
+    for (int i = 0; i < 64; i++) {
+        // skip the squares that are empty (where there no piece to move)
+        if ( ((1ULL << i) & friendlyBoard) == 0 ) {
+            continue;
+        }
+
+        U64 candidateMoves = generateMoveFromTargetSquare(&state, i, occupied);
+        U64 possibleMoves = candidateMoves & ~friendlyBoard;
+
+        while(possibleMoves > 0) {
+            int to = popLSB(&possibleMoves);
+
+            State temp = state;
+            doMove(&temp, i, to);
+            temp.turn = !temp.turn;
+            // if you found a move that makes you get out from the check,
+            // you are not mated
+            if (!isInCheck(temp)) {
+                return 0;
+            }
+        }
+    }
+    // you only every come here if you found no move that makes you get out from the check
+    return 1;
+}
 
 int main() {
     currentState = prevState = prevprevState = initializeState();
@@ -229,11 +269,16 @@ int main() {
             } else { // else, Domove
                 prevprevState = prevState;
                 prevState = temp;
+
+                printGameBoard(currentState);
+                if (areYouMated(&currentState)) {
+                    printf("%s won\n", (currentState.turn == WHITE) ? "black" : "white");
+                    break;
+                }
             }
         } else {
             printf("invalid move\n");
         }
-        printGameBoard(currentState);
     }
     return 0;
 }
