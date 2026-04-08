@@ -67,11 +67,15 @@ void doMove(State *p, int from, int to) {
     U64 wasThatCapture = 0;
 
     StateUnion su; 
+    StateUnion suPrevPrev;
     su.s = *p;
+    suPrevPrev.s = prevprevState;
 
     int threeFold = p->threeMoveRepetition;
     int fiftyMove = p->fiftyMoveRule;
 
+    // =====================Draw conditions =====================
+    // FiftyMoveRule
     for (int i = 0; i < 12; i++) {
         wasThatCapture |= (su.pieces[i] & toBoard);
     }
@@ -82,7 +86,18 @@ void doMove(State *p, int from, int to) {
         fiftyMove++;
     }
 
-    // enPassant Caputre and Move
+    // threeMoveRepetition;
+    for (int i = 0; i < 12; i++) {
+        if (su.pieces[i] != suPrevPrev.pieces[i]) {
+            threeFold = 0;
+        } else {
+            threeFold++;
+            break;
+        }
+    }
+
+    // =====================moving pieces ======================
+    // enPassant Caputre and Move and Castling
     if ( (toBoard & enPassantBitboard) && ( (wasThatWhitePawn) || (wasThatBlackPawn) )) {
         if(p->turn == WHITE) {
             moveBit(&p->wp, from, to);
@@ -91,7 +106,7 @@ void doMove(State *p, int from, int to) {
             moveBit(&p->bp, from, to);
             removeBit(&p->wp, (to + 8));
         }
-    } else if ( (wasThatWhiteKing) && (abs(to - from) == 2) ) { // wow, white castled
+    } else if ( (wasThatWhiteKing) && (abs(to - from) == 2) ) { // white castled
         moveBit(&(p->wk), from, to);
 
         if (to == 6) { // king side
@@ -99,7 +114,7 @@ void doMove(State *p, int from, int to) {
         } else { // queen side
             moveBit(&(p->wr), 0, 3);
         }
-    } else if ( (wasThatBlackKing) && (abs(to - from) == 2) ) { // wow, black castled
+    } else if ( (wasThatBlackKing) && (abs(to - from) == 2) ) { // black castled
         moveBit(&(p->bk), from, to);
 
         if(to == 62) { // king side
@@ -120,7 +135,7 @@ void doMove(State *p, int from, int to) {
         *p = su.s;
     }
 
-    // remove castling right
+    // ============== remove castling right =============
     // White
     if (wasThatWhiteKing) {
         p->castleState &= 0b0011;
@@ -154,6 +169,8 @@ void doMove(State *p, int from, int to) {
 
 int main() {
     currentState = prevState = prevprevState = initializeState();
+
+    // example position (there should be a better way than loading 3 position manually...)
 /*
     char startingPosition[] = "r1bqk2r/pppp1ppp/2n2n2/1B2p3/1b2P3/2N2N2/PPPP1PPP/R1BQK2R w KQkq - 6 5";
     currentState = fenToState(startingPosition);
@@ -164,51 +181,59 @@ int main() {
     char prevprevPosition[] = "r1bqkb1r/pppp1ppp/2n2n2/4p3/4P3/2N2N2/PPPP1PPP/R1BQKB1R w KQkq - 4 4";
     prevprevState = fenToState(prevprevPosition);
 */
-    // char input[4] = {'e', '2', 'e', '3'};
     char input[5];
+    // Lan only need 4 + '\0'
 
     printGameBoard(currentState);
     int from, to;
 
     while(1) {
+        // check the drawing condition
+        if (currentState.fiftyMoveRule >= 100) {
+            break;
+        }
+        if (currentState.threeMoveRepetition  >= 6) {
+            break;
+        }
+
+        // get the user input
         scanf("%4s", input);
+
+        // update occupied boards
         U64 occupied = allOccupied(currentState);
         U64 blackBoard = blackOccupied(currentState);
         U64 whiteBoard = whiteOccupied(currentState);
 
+        // parse user input
         parseLAN(input, &from, &to);
 
-        U64 candidateMoves = generateMoveFromTargetSquare(&currentState, from, occupied);
         // This gives you actual moves that you can make (I hope)
         // You AND with NOT of your pieces to discard friendly pieces
-        U64 possibleMoves = (currentState.turn == WHITE) ? (candidateMoves & ~whiteBoard) : (candidateMoves & ~blackBoard);
+        U64 candidateMoves = generateMoveFromTargetSquare(&currentState, from, occupied);
+
         // This is the pseudo-legal move (legal move without checking check)
+        U64 possibleMoves = (currentState.turn == WHITE) ? (candidateMoves & ~whiteBoard) : (candidateMoves & ~blackBoard);
         
+        // Here we check if the king is in check after the move (meaning illegal move)
         if( (1ULL << to) & possibleMoves) {
-
-            // three repetition
-            // 50 move rules
-
-            State temp = currentState;
+            State temp = currentState;       // Save the current State
             doMove(&currentState, from, to); // Try the move
             
+            // These are to check check
             State afterMove = currentState;
             afterMove.turn = !afterMove.turn;
 
-            if (isInCheck(afterMove)) { // Undo the move 
+            if (isInCheck(afterMove)) { // if in check, Undo the move 
                 currentState = temp;
                 printf("Illegal Move; King Check\n");
-            } else { // Domove
+            } else { // else, Domove
                 prevprevState = prevState;
                 prevState = temp;
             }
-
         } else {
             printf("invalid move\n");
         }
-
         printGameBoard(currentState);
     }
-
     return 0;
 }
