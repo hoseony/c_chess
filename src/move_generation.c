@@ -9,9 +9,9 @@ U64 generateRookMove(int square, U64 occupied);
 U64 generateBishopMove(int square, U64 occupied);
 U64 generateQueenMove(int square, U64 occupied);
 U64 generateKingMove(int square);
-U64 generateEnPassant();
-U64 generateWhitePawnMove(int square, U64 occupied);
-U64 generateBlackPawnMove(int square, U64 occupied);
+U64 generateEnPassant(State current, State prev);
+U64 generateWhitePawnMove(int square, U64 occupied, State p, State prev);
+U64 generateBlackPawnMove(int square, U64 occupied, State p, State perv);
 U64 pawnPromotion(U64 board);
 U64 blackAttackBoard(State p);
 U64 whiteAttackBoard(State p);
@@ -137,27 +137,27 @@ U64 generateKingMove(int square) {
     return kingMove;
 }
 
-U64 generateEnPassant() {
-   U64 en_passant = ((((currentState.wp ^ prevState.wp)) & currentState.wp) >> 8) * (((currentState.wp ^ prevState.wp) & BIT_2_RANK) > 0);
-   en_passant |= ((((currentState.bp ^ prevState.bp)) & currentState.bp) << 8) * (((currentState.bp ^ prevState.bp) & BIT_7_RANK) > 0);
+U64 generateEnPassant(State current, State prev) {
+   U64 en_passant = ((((current.wp ^ prev.wp)) & current.wp) >> 8) * (((current.wp ^ prev.wp) & BIT_2_RANK) > 0);
+   en_passant |= ((((current.bp ^ prev.bp)) & current.bp) << 8) * (((current.bp ^ prev.bp) & BIT_7_RANK) > 0);
    return en_passant; 
 }
 
-U64 generateWhitePawnMove(int square, U64 occupied) {
+U64 generateWhitePawnMove(int square, U64 occupied, State p, State prev) {
     U64 whitePawnMove = 0;
-    U64 black_board = blackOccupied(currentState);
+    U64 black_board = blackOccupied(p);
 
     // capture
     whitePawnMove |= ((1ULL << square) << 9) * ((BIT_A_FILE & (1ULL << square) << 9) == 0); 
     whitePawnMove |= ((1ULL << square) << 7) * ((BIT_H_FILE & (1ULL << square) << 7) == 0); 
     whitePawnMove &= black_board;  
     // en-passant
-    whitePawnMove |= (((1ULL << square) << 9) & generateEnPassant()) * ((BIT_A_FILE & (1ULL << square) << 9) == 0); 
-    whitePawnMove |= (((1ULL << square) << 7) & generateEnPassant()) * ((BIT_H_FILE & (1ULL << square) << 7) == 0);
+    whitePawnMove |= (((1ULL << square) << 9) & generateEnPassant(p, prev)) * ((BIT_A_FILE & (1ULL << square) << 9) == 0); 
+    whitePawnMove |= (((1ULL << square) << 7) & generateEnPassant(p, prev)) * ((BIT_H_FILE & (1ULL << square) << 7) == 0);
     // direction
     whitePawnMove |= (1ULL << square << 8) * (((1ULL << square << 8) & occupied) == 0); 
     // two move initial
-    whitePawnMove |= (1ULL << square << 16) * (((1ULL << square & BIT_2_RANK) > 0)) * (((1ULL << square << 16) & occupied) == 0);
+    whitePawnMove |= (1ULL << square << 16) * (((1ULL << square & BIT_2_RANK) > 0)) * (((1ULL << square << 16) & occupied) == 0) * (((1ULL << square << 8) & occupied) == 0);
     return whitePawnMove;
 }
 
@@ -175,20 +175,20 @@ U64 generateBlackPawnAttack(int square) {
     return blackPawnAttack;  
 }
 
-U64 generateBlackPawnMove(int square, U64 occupied) {
+U64 generateBlackPawnMove(int square, U64 occupied, State p, State prev) {
     U64 blackPawnMove = 0;
-    U64 white_board = whiteOccupied(currentState); 
+    U64 white_board = whiteOccupied(p); 
     // capture
     blackPawnMove |= ((1ULL << square) >> 9) * ((BIT_H_FILE & (1ULL << square) >> 9) == 0); 
     blackPawnMove |= ((1ULL << square) >> 7) * ((BIT_A_FILE & (1ULL << square) >> 7) == 0); 
     blackPawnMove &= white_board;  
     // en-passant
-    blackPawnMove |= (((1ULL << square) >> 9) & generateEnPassant()) * ((BIT_H_FILE & (1ULL << square) >> 9) == 0); 
-    blackPawnMove |= (((1ULL << square) >> 7) & generateEnPassant()) * ((BIT_A_FILE & (1ULL << square) >> 7) == 0);
+    blackPawnMove |= (((1ULL << square) >> 9) & generateEnPassant(p, prev)) * ((BIT_H_FILE & (1ULL << square) >> 9) == 0); 
+    blackPawnMove |= (((1ULL << square) >> 7) & generateEnPassant(p, prev)) * ((BIT_A_FILE & (1ULL << square) >> 7) == 0);
     // direction
     blackPawnMove |= (1ULL << square >> 8) * (((1ULL << square >> 8) & occupied) == 0); 
     // two move initial
-    blackPawnMove |= (1ULL << square >> 16) * ((1ULL << square & BIT_7_RANK) > 0) * (((1ULL << square >> 16) & occupied) == 0);
+    blackPawnMove |= (1ULL << square >> 16) * ((1ULL << square & BIT_7_RANK) > 0) * (((1ULL << square >> 16) & occupied) == 0) * (((1ULL << square >> 8) & occupied) == 0);
     return blackPawnMove;
 }
 

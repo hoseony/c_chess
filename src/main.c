@@ -22,16 +22,16 @@ bool parseLAN(char *input, int *fromSquare, int *toSquare) {
 }
 
 // Note to Thomas: Make more efficient 
-U64 generateMoveFromTargetSquare(State *p, int targetSquare, U64 occupied) {
+U64 generateMoveFromTargetSquare(State *p, State *prev, int targetSquare, U64 occupied) {
     
     U64 square = (1ULL << targetSquare);
     bool turn = p->turn;
 
     if((square & p->wp) && (turn == WHITE)) {
-        return generateWhitePawnMove(targetSquare, occupied);
+        return generateWhitePawnMove(targetSquare, occupied, *p, *prev);
     }
     else if ((square & p->bp) && (turn == BLACK)) {
-        return generateBlackPawnMove(targetSquare, occupied);
+        return generateBlackPawnMove(targetSquare, occupied, *p, *prev);
     }
     else if((square & p->wn) || (square & p->bn))  {
         return generateKnightMove(targetSquare);
@@ -52,8 +52,8 @@ U64 generateMoveFromTargetSquare(State *p, int targetSquare, U64 occupied) {
     }
 }
 
-void doMove(State *p, int from, int to) {
-    U64 enPassantBitboard = generateEnPassant();
+void doMove(State *p, State *prev, int from, int to) {
+    U64 enPassantBitboard = generateEnPassant(*p, *prev);
 
     U64 fromBoard = (1ULL << from);
     U64 toBoard = (1ULL << to);
@@ -166,7 +166,7 @@ void doMove(State *p, int from, int to) {
 }
 
 
-int areYouMated(State *p) { 
+int areYouMated(State *p, State *prev) { 
     // This can be done by asking, "do you have any move that can get you out from the check?"
     // first, check if you are in check, if you are not, you can not be mated.
 
@@ -187,14 +187,14 @@ int areYouMated(State *p) {
             continue;
         }
 
-        U64 candidateMoves = generateMoveFromTargetSquare(&state, i, occupied);
+        U64 candidateMoves = generateMoveFromTargetSquare(&state, prev, i, occupied);
         U64 possibleMoves = candidateMoves & ~friendlyBoard;
 
         while(possibleMoves > 0) {
             int to = popLSB(&possibleMoves);
 
             State temp = state;
-            doMove(&temp, i, to);
+            doMove(&temp, p, i, to);
             temp.turn = !temp.turn;
             // if you found a move that makes you get out from the check,
             // you are not mated
@@ -207,11 +207,69 @@ int areYouMated(State *p) {
     return 1;
 }
 
+U64 perft(State p, State prev, int depth) {
+   
+    currentState = p;
+    prevState = prev;
+
+    U64 numMoves = 0;
+
+    // base case
+    if (depth == 0) {
+        return 1;
+    }
+
+    U64 occupied = allOccupied(p);
+    U64 friendlyBoard = (p.turn == WHITE) ? whiteOccupied(p) : blackOccupied(p);
+
+    for (int i = 0; i < 64; i++) {
+        if ( ((1ULL << i) & friendlyBoard) == 0 ) {
+            continue;
+        }
+
+        // generate pseudo-legal moves
+        U64 possibleMoves = generateMoveFromTargetSquare(&p, &prev, i, occupied) & ~friendlyBoard;
+
+        while (possibleMoves) {
+            // get lsb index
+            int to = popLSB(&possibleMoves);
+
+            State temp = p;
+            doMove(&temp, &p, i, to);
+
+            // swap the turn
+            // you want to check if your move leave your king in check
+            State toCheck = temp;
+            // side who made move (since doMove flips the turn)
+            toCheck.turn = !toCheck.turn;
+            if (isInCheck(toCheck)) {
+                continue;
+            }
+
+            numMoves += perft(temp, p, depth - 1);
+        }
+    }
+    return numMoves;
+}
+
+int main() {
+  
+    State p = initializeState();
+    State prev = initializeState();
+
+    int depth = 8;
+    for (int i = 0; i < depth; i++) {
+        printf("depth %d: %llu \n", i, perft(p, prev, i));
+    }
+
+    return 0;
+}
+
+/*
 int main() {
     currentState = prevState = prevprevState = initializeState();
 
     // example position (there should be a better way than loading 3 position manually...)
-/*
     char startingPosition[] = "r1bqk2r/pppp1ppp/2n2n2/1B2p3/1b2P3/2N2N2/PPPP1PPP/R1BQK2R w KQkq - 6 5";
     currentState = fenToState(startingPosition);
 
@@ -220,7 +278,6 @@ int main() {
 
     char prevprevPosition[] = "r1bqkb1r/pppp1ppp/2n2n2/4p3/4P3/2N2N2/PPPP1PPP/R1BQKB1R w KQkq - 4 4";
     prevprevState = fenToState(prevprevPosition);
-*/
     char input[5];
     // Lan only need 4 + '\0'
 
@@ -247,9 +304,9 @@ int main() {
         // parse user input
         parseLAN(input, &from, &to);
 
-        // This gives you actual moves that you can make (I hope)
+        // This gives you actual moves that the player can make
         // You AND with NOT of your pieces to discard friendly pieces
-        U64 candidateMoves = generateMoveFromTargetSquare(&currentState, from, occupied);
+        U64 candidateMoves = generateMoveFromTargetSquare(&currentState, &prevState, from, occupied);
 
         // This is the pseudo-legal move (legal move without checking check)
         U64 possibleMoves = (currentState.turn == WHITE) ? (candidateMoves & ~whiteBoard) : (candidateMoves & ~blackBoard);
@@ -257,7 +314,7 @@ int main() {
         // Here we check if the king is in check after the move (meaning illegal move)
         if( (1ULL << to) & possibleMoves) {
             State temp = currentState;       // Save the current State
-            doMove(&currentState, from, to); // Try the move
+            doMove(&currentState, &prevState, from, to); // Try the move
             
             // These are to check check
             State afterMove = currentState;
@@ -271,8 +328,8 @@ int main() {
                 prevState = temp;
 
                 printGameBoard(currentState);
-                if (areYouMated(&currentState)) {
-                    printf("%s won\n", (currentState.turn == WHITE) ? "black" : "white");
+                if (areYouMated(&currentState, &prevState)) {
+                    printf("Checkmate! %s won!\n", (currentState.turn == WHITE) ? "Black" : "White");
                     break;
                 }
             }
@@ -282,3 +339,4 @@ int main() {
     }
     return 0;
 }
+*/
