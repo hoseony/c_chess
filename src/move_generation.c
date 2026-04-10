@@ -11,7 +11,7 @@ U64 generateQueenMove(int square, U64 occupied);
 U64 generateKingMove(int square);
 U64 generateEnPassant(State current, State prev);
 U64 generateWhitePawnMove(int square, U64 occupied, State p, State prev);
-U64 generateBlackPawnMove(int square, U64 occupied, State p, State perv);
+U64 generateBlackPawnMove(int square, U64 occupied, State p, State prev);
 U64 pawnPromotion(U64 board);
 U64 blackAttackBoard(State p);
 U64 whiteAttackBoard(State p);
@@ -138,8 +138,8 @@ U64 generateKingMove(int square) {
 }
 
 U64 generateEnPassant(State current, State prev) {
-   U64 en_passant = ((((current.wp ^ prev.wp)) & current.wp) >> 8) * (((current.wp ^ prev.wp) & BIT_2_RANK) > 0);
-   en_passant |= ((((current.bp ^ prev.bp)) & current.bp) << 8) * (((current.bp ^ prev.bp) & BIT_7_RANK) > 0);
+   U64 en_passant = ((((current.wp ^ prev.wp)) & current.wp) >> 8) * (((current.wp ^ prev.wp) & BIT_2_RANK) > 0) * (((current.wp ^ prev.wp) & BIT_4_RANK) > 0);
+   en_passant |= ((((current.bp ^ prev.bp)) & current.bp) << 8) * (((current.bp ^ prev.bp) & BIT_7_RANK) > 0) * (((current.bp ^ prev.bp) & BIT_5_RANK) > 0);
    return en_passant; 
 }
 

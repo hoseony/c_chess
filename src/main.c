@@ -52,7 +52,7 @@ U64 generateMoveFromTargetSquare(State *p, State *prev, int targetSquare, U64 oc
     }
 }
 
-void doMove(State *p, State *prev, int from, int to) {
+void doMove(State *p, State *prev, int from, int to, bool perftQuestionMark) {
     U64 enPassantBitboard = generateEnPassant(*p, *prev);
 
     U64 fromBoard = (1ULL << from);
@@ -67,9 +67,7 @@ void doMove(State *p, State *prev, int from, int to) {
     U64 wasThatCapture = 0;
 
     StateUnion su; 
-    StateUnion suPrevPrev;
     su.s = *p;
-    suPrevPrev.s = prevprevState;
 
     int threeFold = p->threeMoveRepetition;
     int fiftyMove = p->fiftyMoveRule;
@@ -85,14 +83,18 @@ void doMove(State *p, State *prev, int from, int to) {
     } else {
         fiftyMove++;
     }
-
-    // threeMoveRepetition;
-    for (int i = 0; i < 12; i++) {
-        if (su.pieces[i] != suPrevPrev.pieces[i]) {
-            threeFold = 0;
-        } else {
-            threeFold++;
-            break;
+    
+    if (perftQuestionMark) {
+        StateUnion suPrevPrev;
+        suPrevPrev.s = prevprevState;
+        // threeMoveRepetition;
+        for (int i = 0; i < 12; i++) {
+            if (su.pieces[i] != suPrevPrev.pieces[i]) {
+                threeFold = 0;
+            } else {
+                threeFold++;
+                break;
+            }
         }
     }
 
@@ -194,7 +196,7 @@ int areYouMated(State *p, State *prev) {
             int to = popLSB(&possibleMoves);
 
             State temp = state;
-            doMove(&temp, p, i, to);
+            doMove(&temp, p, i, to, true);
             temp.turn = !temp.turn;
             // if you found a move that makes you get out from the check,
             // you are not mated
@@ -207,20 +209,18 @@ int areYouMated(State *p, State *prev) {
     return 1;
 }
 
-U64 perft(State p, State prev, int depth) {
-   
-    currentState = p;
-    prevState = prev;
-
-    U64 numMoves = 0;
+PerftResult perft(State p, State prev, int depth) {
+    PerftResult result = {0};
 
     // base case
     if (depth == 0) {
-        return 1;
+        result.nodes = 1;
+        return result;
     }
 
     U64 occupied = allOccupied(p);
     U64 friendlyBoard = (p.turn == WHITE) ? whiteOccupied(p) : blackOccupied(p);
+    U64 enemyBoard = (p.turn == WHITE) ? blackOccupied(p) : whiteOccupied(p);
 
     for (int i = 0; i < 64; i++) {
         if ( ((1ULL << i) & friendlyBoard) == 0 ) {
@@ -233,9 +233,21 @@ U64 perft(State p, State prev, int depth) {
         while (possibleMoves) {
             // get lsb index
             int to = popLSB(&possibleMoves);
+            U64 epSquare = generateEnPassant(p, prev);
 
+            // check the type of move first
+            bool wasThatWhitePawn = ((p.wp & (1ULL << i)) != 0);
+            bool wasThatBlackPawn = ((p.bp & (1ULL << i)) != 0);
+            bool wasThatPawn = wasThatWhitePawn || wasThatBlackPawn;
+
+            // don't worry about it. This is basically how doMove handles but simpliefed (heaviliy, in one line)
+            bool isCapture = (depth == 1) && ((1ULL << to) & enemyBoard);
+            bool isCastle = (depth == 1) && (((p.wk | p.bk) & (1ULL << i)) && abs(to - i) == 2);
+            bool isEnPassant = (depth == 1) && wasThatPawn && ((1ULL << to) & epSquare) && !(enemyBoard & (1ULL << to)) && (abs(to - i) == 7 || abs(to - i) == 9);
+
+            // let's play a move
             State temp = p;
-            doMove(&temp, &p, i, to);
+            doMove(&temp, &prev, i, to, false);
 
             // swap the turn
             // you want to check if your move leave your king in check
@@ -246,20 +258,40 @@ U64 perft(State p, State prev, int depth) {
                 continue;
             }
 
-            numMoves += perft(temp, p, depth - 1);
+            // if that wa a valid move, increment the following thing
+            if (depth == 1) {
+                if (isEnPassant) { 
+                    result.enPassant++;
+                    result.captures++;
+                } else if (isCapture) {
+                    result.captures++;
+                }
+                if (isCastle) {
+                    result.castle++;
+                }
+            }
+            
+            // counting up hehe
+            PerftResult r = perft(temp, p, depth - 1);
+            result.nodes += r.nodes;
+            result.captures += r.captures;
+            result.enPassant+= r.enPassant;
+            result.castle += r.castle;
+            result.promotion += r.promotion;
         }
     }
-    return numMoves;
+    return result;
 }
 
 int main() {
   
-    State p = initializeState();
+    State pos = initializeState();
     State prev = initializeState();
 
     int depth = 8;
     for (int i = 0; i < depth; i++) {
-        printf("depth %d: %llu \n", i, perft(p, prev, i));
+        PerftResult p = perft(pos, prev, i);
+        printf("depth %d overview | nodes: %llu \t captures %llu \tenPassant: %llu \tcastle: %llu \tpromotion: %llu\n", i, p.nodes, p.captures, p.enPassant, p.castle, p.promotion);
     }
 
     return 0;
@@ -314,7 +346,7 @@ int main() {
         // Here we check if the king is in check after the move (meaning illegal move)
         if( (1ULL << to) & possibleMoves) {
             State temp = currentState;       // Save the current State
-            doMove(&currentState, &prevState, from, to); // Try the move
+            doMove(&currentState, &prevState, from, to, true); // Try the move
             
             // These are to check check
             State afterMove = currentState;

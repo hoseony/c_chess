@@ -41,6 +41,14 @@ typedef union {
     U64 pieces[12]; 
 } StateUnion; 
 
+typedef struct{
+    U64 nodes;
+    U64 captures;
+    U64 enPassant;
+    U64 castle;
+    U64 promotion;
+} PerftResult;
+
 State currentState;
 State prevState;
 State prevprevState; 
