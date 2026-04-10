@@ -1,11 +1,14 @@
 #include "bitboards.h"
-#include "types.h"
 #include "move_generation.h"
 #include "fen.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+
+State currentState;
+State prevState;
+State prevprevState; 
 
 bool parseLAN(char *input, int *fromSquare, int *toSquare) {
     int fromFile = input[0] - 'a';

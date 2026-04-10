@@ -49,8 +49,8 @@ typedef struct{
     U64 promotion;
 } PerftResult;
 
-State currentState;
-State prevState;
-State prevprevState; 
+extern State currentState;
+extern State prevState;
+extern State prevprevState; 
 
 #endif

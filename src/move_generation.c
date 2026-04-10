@@ -1,5 +1,4 @@
 #include "constants.h" 
-#include "types.h" 
 #include "bitboards.h"
 #include <stdbool.h>
 
