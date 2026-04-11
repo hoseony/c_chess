@@ -4,6 +4,8 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include <time.h>
 #include <math.h>
 
 State currentState;
@@ -90,13 +92,20 @@ void doMove(State *p, State *prev, int from, int to, bool perftQuestionMark) {
     if (perftQuestionMark) {
         StateUnion suPrevPrev;
         suPrevPrev.s = prevprevState;
+
+        bool same = true;
+
         // threeMoveRepetition;
         for (int i = 0; i < 12; i++) {
             if (su.pieces[i] != suPrevPrev.pieces[i]) {
-                threeFold = 0;
-            } else {
+                // it is different position
+                same = false;
+            }
+
+            if (same) {
                 threeFold++;
-                break;
+            } else {
+                threeFold = 0;
             }
         }
     }
@@ -195,7 +204,7 @@ int areYouMated(State *p, State *prev) {
         U64 candidateMoves = generateMoveFromTargetSquare(&state, prev, i, occupied);
         U64 possibleMoves = candidateMoves & ~friendlyBoard;
 
-        while(possibleMoves > 0) {
+        while (possibleMoves > 0) {
             int to = popLSB(&possibleMoves);
 
             State temp = state;
@@ -210,6 +219,41 @@ int areYouMated(State *p, State *prev) {
     }
     // you only every come here if you found no move that makes you get out from the check
     return 1;
+}
+
+int generateLegalMove(State state, State prevState, Move *moves, int maxMoves) {
+    int counter = 0;
+
+    U64 occupied = allOccupied(state);
+    U64 friendlyBoard = (state.turn == WHITE) ? whiteOccupied(state) : blackOccupied(state);
+
+    for (int i = 0; i < 64; i++) {
+        if ( ((1ULL << i) & friendlyBoard) == 0 ) {
+            continue;
+        }
+       
+        U64 possibleMoves = generateMoveFromTargetSquare(&state, &prevState, i, occupied) & ~friendlyBoard;
+
+        while (possibleMoves > 0) {
+            int to = popLSB(&possibleMoves);
+
+            State temp = state;
+            doMove(&temp, &prevState, i, to, false);
+
+            State checkCheck = temp;
+            checkCheck.turn = !checkCheck.turn;
+            if (isInCheck(checkCheck)) {
+                continue;
+            }
+
+            if (counter < maxMoves) {
+                moves[counter].from = i;
+                moves[counter].to = to;
+                counter++;
+            }
+        }
+    }
+    return counter; 
 }
 
 PerftResult perft(State p, State prev, int depth) {
@@ -244,6 +288,7 @@ PerftResult perft(State p, State prev, int depth) {
             bool wasThatPawn = wasThatWhitePawn || wasThatBlackPawn;
 
             // don't worry about it. This is basically how doMove handles but simpliefed (heaviliy, in one line)
+            // I really hate this but it is just a debug function so I'll just leave it like this. Whatever.
             bool isCapture = (depth == 1) && ((1ULL << to) & enemyBoard);
             bool isCastle = (depth == 1) && (((p.wk | p.bk) & (1ULL << i)) && abs(to - i) == 2);
             bool isEnPassant = (depth == 1) && wasThatPawn && ((1ULL << to) & epSquare) && !(enemyBoard & (1ULL << to)) && (abs(to - i) == 7 || abs(to - i) == 9);
@@ -286,8 +331,7 @@ PerftResult perft(State p, State prev, int depth) {
     return result;
 }
 
-int main() {
-  
+void runPerft() {
     State pos = initializeState();
     State prev = initializeState();
 
@@ -296,9 +340,53 @@ int main() {
         PerftResult p = perft(pos, prev, i);
         printf("depth %d overview | nodes: %llu \t captures %llu \tenPassant: %llu \tcastle: %llu \tpromotion: %llu\n", i, p.nodes, p.captures, p.enPassant, p.castle, p.promotion);
     }
+}
+
+int main() {
+    currentState = prevState = prevprevState = initializeState();
+    srand(time(NULL));
+   
+    // list of possible moves
+    Move moves[218];
+
+    while(1) {
+        int r = rand(); 
+
+        int moveCount = generateLegalMove(currentState, prevState, moves, 218);
+        
+        if (moveCount == 0) { //if there's no move, it's either mate or stalemate, for now, I do not care
+            if (isInCheck(currentState)) {
+                printf("Checkmate!\n");
+            } else {
+                printf("Stalemate\n");
+            }
+            break;
+        }
+
+        if (currentState.fiftyMoveRule == 100) {
+            printf("Draw by fiftyMoveRule\n");
+            break;
+        }
+
+        Move m = moves[r % moveCount];
+
+        State oldState = currentState;
+        printf("playing: %d -> %d\n", m.from, m.to);
+        doMove(&currentState, &prevState, m.from, m.to, true);
+
+        prevprevState = prevState;
+        prevState = oldState;
+
+        printGameBoard(currentState);
+
+    }
 
     return 0;
 }
+
+
+
+
 
 /*
 int main() {

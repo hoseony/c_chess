@@ -31,9 +31,8 @@ typedef struct{
 } State;
 
 typedef struct{
-    State before;
-    State after;
-    int type;
+    int from;
+    int to;
 } Move;
 
 typedef union {
