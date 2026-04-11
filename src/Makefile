@@ -1,8 +1,14 @@
 CC = gcc
 CFLAGS = -Wall -std=c11
 
-chess: bitboards.c move_generation.c fen.c main.c
-	$(CC) $(CFLAGS) -o chess bitboards.c move_generation.c fen.c main.c -lm
+SRCS = bitboards.c move_generation.c fen.c legal_move.c main.c
+OBJS = $(SRCS:.c=.o)
+
+chess: $(OBJS)
+	$(CC) $(CFLAGS) -o chess $(OBJS)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f chess
+	rm -f chess $(OBJS)

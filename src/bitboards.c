@@ -5,7 +5,6 @@
 
 #include "constants.h" 
 #include "types.h" 
-#include "move_generation.h"
 
 //-------- function prototype ----------
 void putBit(U64 *board, Board_pos pos);
