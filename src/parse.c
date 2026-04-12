@@ -70,3 +70,17 @@ State fenToState(char *fen) {
 
     return state;
 }
+
+bool parseLAN(char *input, int *fromSquare, int *toSquare) {
+    int fromFile = input[0] - 'a';
+    int fromRank = input[1] - '1';
+    int toFile = input[2] - 'a';
+    int toRank = input[3] - '1';
+
+    printf("%d,%d -> %d,%d\n", fromFile, fromRank, toFile, toRank);
+
+    *fromSquare = (fromRank * 8 + fromFile);
+    *toSquare = (toRank * 8 + toFile);
+
+    return 1;
+}

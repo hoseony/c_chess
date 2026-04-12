@@ -8,7 +8,7 @@
 
 #include "types.h"
 #include "move_generation.h"
-#include "fen.h"
+#include "parse.h"
 #include "bitboards.h"
 
 

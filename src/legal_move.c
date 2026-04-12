@@ -1,11 +1,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
-#include <math.h>
 
 #include "types.h"
 #include "move_generation.h"
-#include "fen.h"
 #include "bitboards.h"
 
 // -------- function prototypes ------

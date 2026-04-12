@@ -1,14 +1,17 @@
 CC = gcc
-CFLAGS = -Wall -std=c11
+CFLAGS = -Wall -Wextra -std=c11
 
-SRCS = bitboards.c move_generation.c fen.c legal_move.c main.c
-OBJS = $(SRCS:.c=.o)
+SRCS = bitboards.c move_generation.c parse.c legal_move.c main.c
+OBJS = $(addprefix ../build/, $(SRCS:.c=.o))
 
 chess: $(OBJS)
-	$(CC) $(CFLAGS) -o chess $(OBJS)
+	$(CC) $(CFLAGS) -o ../build/chess $(OBJS)
 
-%.o: %.c
+../build/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f chess $(OBJS)
+	rm -f ../build/chess $(OBJS)
+
+run: chess
+	../build/chess
