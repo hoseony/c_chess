@@ -2,10 +2,9 @@
 The goal of this project is to make a working bitboard based chess engine in C.
 
 ## Acknowledgement
-Assets
-- [chess pieces png](https://greenchess.net/info.php?item=downloads)
-
 This project would not have been possible without these sources. Thank you for the authors, and I hope you find it useful and interesting! 
+
+Chess pieces png are taken from [greenchess](https://greenchess.net/info.php?item=downloads).
 
 The main inspiration for this project was from Sebastian Lague's Chess Engine series.
 - [Coding Adventure: Chess](https://youtu.be/U4ogK0MIzqk?si=00jx32x_qVhYGBIi) 
