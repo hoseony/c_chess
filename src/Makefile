@@ -1,7 +1,7 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c11
+CFLAGS = -Wall -Wextra -std=c11 -g -O0
 
-SRCS = bitboards.c move_generation.c parse.c legal_move.c main.c
+SRCS = bitboards.c move_generation.c parse.c legal_move.c main.c finding_magic.c
 OBJS = $(addprefix ../build/, $(SRCS:.c=.o))
 
 chess: $(OBJS)

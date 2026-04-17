@@ -5,18 +5,19 @@
 #include "types.h"
 #include "move_generation.h"
 #include "bitboards.h"
+#include "finding_magic.h"
 
 // -------- function prototypes ------
-U64 generateMoveFromTargetSquare(State *p, State *prev, int targetSquare, U64 occupied);
+U64 generateMoveFromTargetSquare(State *p, State *prev, int targetSquare, U64 occupied, RookMagic *rookMagic, BishopMagic *bishopMagic);
 void doMove(State *p, State *prev, int from, int to, bool perftQuestionMark);
-int areYouMated(State *p, State *prev);
-int generateLegalMove(State state, State prevState, Move *moves, int maxMoves);
-PerftResult perft(State p, State prev, int depth);
-void runPerft();
+int areYouMated(State *p, State *prev, RookMagic *rookMagic, BishopMagic *bishopMagic);
+int generateLegalMove(State state, State prevState, Move *moves, int maxMoves, RookMagic *rookMagic, BishopMagic *bishopMagic);
+PerftResult perft(State p, State prev, int depth, RookMagic *rookMagic, BishopMagic *bishopMagic);
+void runPerft(RookMagic *rookMagic, BishopMagic *bishopMagic);
 // -----------------------------------
 
 // Note to Thomas: Make more efficient 
-U64 generateMoveFromTargetSquare(State *p, State *prev, int targetSquare, U64 occupied) {
+U64 generateMoveFromTargetSquare(State *p, State *prev, int targetSquare, U64 occupied, RookMagic *rookMagic, BishopMagic *bishopMagic) {
     
     U64 square = (1ULL << targetSquare);
     bool turn = p->turn;
@@ -31,16 +32,20 @@ U64 generateMoveFromTargetSquare(State *p, State *prev, int targetSquare, U64 oc
         return generateKnightMove(targetSquare);
     }
     else if((square & p->wb) || (square & p->bb)) {
-        return generateBishopMove(targetSquare, occupied);
+        return getBishopMove(bishopMagic, targetSquare, occupied);
+        //return generateBishopMove(targetSquare, occupied);
     }
     else if((square & p->wr) || (square & p->br)) {
-        return generateRookMove(targetSquare, occupied);
+        return getRookMove(rookMagic, targetSquare, occupied);
+        //return generateRookMove(targetSquare, occupied);
     }
     else if((square & p->wq) || (square & p->bq)) {
-        return generateQueenMove(targetSquare, occupied);
+        return (getRookMove(rookMagic, targetSquare, occupied) | getBishopMove(bishopMagic, targetSquare, occupied));
+
+        //return generateQueenMove(targetSquare, occupied);
     }
     else if((square & p->wk) || (square & p->bk)) {
-        return generateKingMove(targetSquare) | ((generateWhiteKingCastleMove(*p) * ((square & p->wk) > 0) + generateBlackKingCastleMove(*p) * ((square & p->bk) > 0)));
+        return generateKingMove(targetSquare) | ((generateWhiteKingCastleMove(*p, rookMagic, bishopMagic) * ((square & p->wk) > 0) + generateBlackKingCastleMove(*p, rookMagic, bishopMagic) * ((square & p->bk) > 0)));
     } else {
         return 0;
     }
@@ -168,13 +173,13 @@ void doMove(State *p, State *prev, int from, int to, bool perftQuestionMark) {
     p->threeMoveRepetition = threeFold;
 }
 
-int areYouMated(State *p, State *prev) { 
+int areYouMated(State *p, State *prev, RookMagic *rookMagic, BishopMagic *bishopMagic) { 
     // This can be done by asking, "do you have any move that can get you out from the check?"
     // first, check if you are in check, if you are not, you can not be mated.
 
     State state = *p;
 
-    if (isInCheck(state) == 0) {
+    if (isInCheck(state, rookMagic, bishopMagic) == 0) {
         return 0;
     }
 
@@ -189,7 +194,7 @@ int areYouMated(State *p, State *prev) {
             continue;
         }
 
-        U64 candidateMoves = generateMoveFromTargetSquare(&state, prev, i, occupied);
+        U64 candidateMoves = generateMoveFromTargetSquare(&state, prev, i, occupied, rookMagic, bishopMagic);
         U64 possibleMoves = candidateMoves & ~friendlyBoard;
 
         while (possibleMoves > 0) {
@@ -200,7 +205,7 @@ int areYouMated(State *p, State *prev) {
             temp.turn = !temp.turn;
             // if you found a move that makes you get out from the check,
             // you are not mated
-            if (!isInCheck(temp)) {
+            if (!isInCheck(temp, rookMagic, bishopMagic)) {
                 return 0;
             }
         }
@@ -210,7 +215,7 @@ int areYouMated(State *p, State *prev) {
 }
 
 
-int generateLegalMove(State state, State prevState, Move *moves, int maxMoves) {
+int generateLegalMove(State state, State prevState, Move *moves, int maxMoves, RookMagic *rookMagic, BishopMagic *bishopMagic) {
     int counter = 0;
 
     U64 occupied = allOccupied(state);
@@ -221,7 +226,7 @@ int generateLegalMove(State state, State prevState, Move *moves, int maxMoves) {
             continue;
         }
        
-        U64 possibleMoves = generateMoveFromTargetSquare(&state, &prevState, i, occupied) & ~friendlyBoard;
+        U64 possibleMoves = generateMoveFromTargetSquare(&state, &prevState, i, occupied, rookMagic, bishopMagic) & ~friendlyBoard;
 
         while (possibleMoves > 0) {
             int to = popLSB(&possibleMoves);
@@ -231,7 +236,7 @@ int generateLegalMove(State state, State prevState, Move *moves, int maxMoves) {
 
             State checkCheck = temp;
             checkCheck.turn = !checkCheck.turn;
-            if (isInCheck(checkCheck)) {
+            if (isInCheck(checkCheck, rookMagic, bishopMagic)) {
                 continue;
             }
 
@@ -246,7 +251,7 @@ int generateLegalMove(State state, State prevState, Move *moves, int maxMoves) {
 }
 
 
-PerftResult perft(State p, State prev, int depth) {
+PerftResult perft(State p, State prev, int depth, RookMagic *rookMagic, BishopMagic *bishopMagic) {
     PerftResult result = {0};
 
     // base case
@@ -265,7 +270,7 @@ PerftResult perft(State p, State prev, int depth) {
         }
 
         // generate pseudo-legal moves
-        U64 possibleMoves = generateMoveFromTargetSquare(&p, &prev, i, occupied) & ~friendlyBoard;
+        U64 possibleMoves = generateMoveFromTargetSquare(&p, &prev, i, occupied, rookMagic, bishopMagic) & ~friendlyBoard;
 
         while (possibleMoves) {
             // get lsb index
@@ -292,7 +297,7 @@ PerftResult perft(State p, State prev, int depth) {
             State toCheck = temp;
             // side who made move (since doMove flips the turn)
             toCheck.turn = !toCheck.turn;
-            if (isInCheck(toCheck)) {
+            if (isInCheck(toCheck, rookMagic, bishopMagic)) {
                 continue;
             }
 
@@ -310,7 +315,7 @@ PerftResult perft(State p, State prev, int depth) {
             }
             
             // counting up hehe
-            PerftResult r = perft(temp, p, depth - 1);
+            PerftResult r = perft(temp, p, depth - 1, rookMagic, bishopMagic);
             result.nodes += r.nodes;
             result.captures += r.captures;
             result.enPassant+= r.enPassant;
@@ -321,7 +326,7 @@ PerftResult perft(State p, State prev, int depth) {
     return result;
 }
 
-void runPerft() {
+void runPerft(RookMagic *rookMagic, BishopMagic *bishopMagic) {
     State pos = initializeState();
     State prev = initializeState();
 
@@ -329,7 +334,7 @@ void runPerft() {
     for (int i = 0; i < depth; i++) {
         // https://stackoverflow.com/questions/5248915/execution-time-of-c-program
         clock_t start = clock();
-        PerftResult p = perft(pos, prev, i);
+        PerftResult p = perft(pos, prev, i, rookMagic, bishopMagic);
         clock_t end = clock();
         double elapsed = (double)(end - start) / CLOCKS_PER_SEC * 1000;
 

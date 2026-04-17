@@ -8,6 +8,7 @@
 #include "move_generation.h"
 #include "parse.h"
 #include "legal_move.h"
+#include "finding_magic.h"
 
 State currentState;
 State prevState;
@@ -22,6 +23,17 @@ static int king[64] = {
     -40, -40, -40, -40, -40, -40, -40, -40,
     -20, -20, -20, -20, -20, -20, -20, -20,
      20,  30,  10, -30, -10, -20,  30,  20,
+};
+
+static int kingEnd[64] = {
+    -10,   10,  -10, -10, -10,  -10, -10,  -10,
+    -10,   00,   00,  00,  00,   00,  00,  -10,
+    -10,   00,   10,  15,  15,   10,  00,  -10,
+    -10,   00,   15,  20,  20,   15,  00,  -10,
+    -10,   00,   15,  20,  20,   15,  00,  -10,
+    -10,   00,   25,  15,  15,   25,  00,  -10,
+    -10,   00,   00,  00,  00,   00,  00,  -10,
+    -10,  -30,  -20,  00,  00,  -20, -30,  -10,
 };
 
 static int pawn[64] = {
@@ -128,64 +140,81 @@ int negaMax( int depth ) {
 }
 */
 
-int negamax(State p, State prev, int depth, int alpha, int beta) {
-    // beta: opponent's upper bound
-    // alpha: your lower bound
+// I did not came up with this algorithm...
+// https://en.wikipedia.org/wiki/Negamax
+int negamax(State p, State prev, int depth, int alpha, int beta, RookMagic *rookMagic, BishopMagic *bishopMagic) {
+    // alpha and beta are lower and upper bound for a child node.
+    // you start from alpha -infinity, beta +infinity
+    // if your score gets out of this bound, you cut off the search
 
     // base case
     if (depth == 0) {
         return positionEvaluation(p);
         // this should be qsaerch
+        // https://www.dogeystamp.com/chess5/
     }
 
     // get possible moves
     Move moves[218];
-    int moveCount = generateLegalMove(p, prev, moves, 218);
+    int moveCount = generateLegalMove(p, prev, moves, 218, rookMagic, bishopMagic);
+
+    int value = -999999; // this will keep track of the best score
+
+    // ideally, move ordering should go here.
 
     // checkmate or stalemate
     if (moveCount == 0) {
-        if (isInCheck(p)) {
+        if (isInCheck(p, rookMagic, bishopMagic)) {
             // being mated is bad
-            return -9999999;
+            return -999999;
         } else {
             // draw is mid
-            return -150;
+            return -100;
+            // I don't really want it to go for the draw, so I gave some -
         }
     }
 
     for(int i = 0; i < moveCount; i++) {
         State temp = p;
         // you do the move
+
         doMove(&temp, &prev, moves[i].from, moves[i].to, false);
 
-        // then, you pass the next turns
-        // This score is basically telling you how good this position is
-        int score = -negamax(temp, p, depth - 1, -beta, -alpha);
+        int score = -negamax(temp, p, depth - 1, -beta, -alpha, rookMagic, bishopMagic);
        
-        // some pruning
+        // This pruning way is called fail-soft variation of alpha-beta prunning
         
-        if (score >= beta) {
-            return score;
+        // update the best score to value
+        if (score > value) {
+            value = score;
         }
 
-        // you found a better move. Nice!
-        if (score > alpha) {
-            alpha = score;
+        // when you found a move that's better, you don't need to search moves that
+        // are worse than that
+        if (value > alpha) {
+            alpha = value;
+        }
+
+        // If your alpha is greater than beta, meaning your lower bound is higher than opponent's upperbound,
+        // Your opponent will be smart enough to not let that happen.
+        // prune the branch
+        if (alpha >= beta) {
+            break;
         }
     }
-    return alpha;
+    return value;
 }
 
-Move negmaxBestMove(State p, State prev, int depth) {
+Move negmaxBestMove(State p, State prev, int depth, RookMagic *rookMagic, BishopMagic *bishopMagic) {
     Move moves[218];
-    int moveCount = generateLegalMove(p, prev, moves, 218);
+    int moveCount = generateLegalMove(p, prev, moves, 218, rookMagic, bishopMagic);
 
     int numPieces = __builtin_popcountll(allOccupied(p));
 
-    if (numPieces <= 15) {
-        depth = 7;
-    } else if (numPieces < 10){
+    if (numPieces <= 10) {
         depth = 8;
+    } else if (numPieces < 15){
+        depth = 7;
     }
 
     Move best = moves[0];
@@ -196,7 +225,8 @@ Move negmaxBestMove(State p, State prev, int depth) {
         State temp = p;
         doMove(&temp, &prev, moves[i].from, moves[i].to, false);
 
-        int score = -negamax(temp, p, depth - 1, -beta, -alpha);
+        int score = -negamax(temp, p, depth - 1, -beta, -alpha, rookMagic, bishopMagic);
+        //printf("root move %d -> %d score %d\n", moves[i].from, moves[i].to, score);
 
         // you found a better move. Nice!
         if (score > alpha) {
@@ -208,8 +238,20 @@ Move negmaxBestMove(State p, State prev, int depth) {
 }
 
 
-
 int main() {
+    RookMagic rookMagic;
+    BishopMagic bishopMagic;
+    prepareMagic(&rookMagic, &bishopMagic);
+
+    runPerft(&rookMagic, &bishopMagic);
+}
+
+/*
+int main() {
+    RookMagic rookMagic;
+    BishopMagic bishopMagic;
+    prepareMagic(&rookMagic, &bishopMagic);
+
     currentState = prevState = prevprevState = initializeState();
    
     // list of possible moves
@@ -217,7 +259,7 @@ int main() {
 
     while(1) {
 
-        int moveCount = generateLegalMove(currentState, prevState, moves, 218);
+        int moveCount = generateLegalMove(currentState, prevState, moves, 218, &rookMagic, &bishopMagic);
         
         if (moveCount == 0) { //if there's no move, it's either mate or stalemate, for now, I do not care
             if (isInCheck(currentState)) {
@@ -233,7 +275,7 @@ int main() {
             break;
         }
 
-        Move m = negmaxBestMove(currentState, prevState, 5);
+        Move m = negmaxBestMove(currentState, prevState, 5, &rookMagic, &bishopMagic);
 
         State oldState = currentState;
         printf("playing: %d -> %d\n", m.from, m.to);
@@ -248,4 +290,4 @@ int main() {
 
     return 0;
 }
-
+*/

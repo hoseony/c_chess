@@ -1,5 +1,6 @@
 #include "constants.h" 
 #include "bitboards.h"
+#include "finding_magic.h"
 #include <stdbool.h>
 
 // --------- Function Prototype --------
@@ -12,11 +13,11 @@ U64 generateEnPassant(State current, State prev);
 U64 generateWhitePawnMove(int square, U64 occupied, State p, State prev);
 U64 generateBlackPawnMove(int square, U64 occupied, State p, State prev);
 U64 pawnPromotion(U64 board);
-U64 blackAttackBoard(State p);
-U64 whiteAttackBoard(State p);
-U64 generateBlackKingCastleMove(State p);
-U64 generateWhiteKingCastleMove(State p);
-bool isInCheck(State p);
+U64 blackAttackBoard(State p, RookMagic *rookMagic, BishopMagic *bishopMagic);
+U64 whiteAttackBoard(State p, RookMagic *rookMagic, BishopMagic *bishopMagic);
+U64 generateBlackKingCastleMove(State p, RookMagic *rookMagic, BishopMagic *bishopMagic);
+U64 generateWhiteKingCastleMove(State p, RookMagic *rookMagic, BishopMagic *bishopMagic);
+bool isInCheck(State p, RookMagic *rookMagic, BishopMagic *bishopMagic);
 
 // --------- generate move ----------
 
@@ -191,10 +192,10 @@ U64 generateBlackPawnMove(int square, U64 occupied, State p, State prev) {
     return blackPawnMove;
 }
 
-U64 generateWhiteKingCastleMove(State p) {
+U64 generateWhiteKingCastleMove(State p, RookMagic *rookMagic, BishopMagic *bishopMagic) {
     U64 castlingMove = 0;
     U64 occupied = allOccupied(p);
-    U64 blackAttack = blackAttackBoard(p);
+    U64 blackAttack = blackAttackBoard(p, rookMagic, bishopMagic);
 
     if (p.castleState == 0b0000) {
         return 0;
@@ -215,10 +216,10 @@ U64 generateWhiteKingCastleMove(State p) {
     return castlingMove;
 }
 
-U64 generateBlackKingCastleMove(State p) {
+U64 generateBlackKingCastleMove(State p, RookMagic *rookMagic, BishopMagic *bishopMagic) {
     U64 castlingMove = 0;
     U64 occupied = allOccupied(p);
-    U64 whiteAttack = whiteAttackBoard(p);
+    U64 whiteAttack = whiteAttackBoard(p, rookMagic, bishopMagic);
 
     if (p.castleState == 0b0000) {
         return 0;
@@ -251,7 +252,7 @@ U64 pawnPromotion(U64 board) {
 
 // --------------------------------------------------
 
-U64 blackAttackBoard(State p) {
+U64 blackAttackBoard(State p, RookMagic *rookMagic, BishopMagic *bishopMagic) {
     U64 attackTable = 0;
     U64 occupied = allOccupied(p);
     
@@ -270,19 +271,19 @@ U64 blackAttackBoard(State p) {
     temp = p.bb;
     while(temp) {
         int square = popLSB(&temp);
-        attackTable |= generateBishopMove(square, occupied);
+        attackTable |= getBishopMove(bishopMagic, square, occupied);
     }
 
     temp = p.br;
     while(temp) {
         int square = popLSB(&temp);
-        attackTable |= generateRookMove(square, occupied);
+        attackTable |= getRookMove(rookMagic, square, occupied);
     }
 
     temp = p.bq;
     while(temp) {
         int square = popLSB(&temp);
-        attackTable |= generateQueenMove(square, occupied);
+        attackTable |= getRookMove(rookMagic, square, occupied) | getBishopMove(bishopMagic, square, occupied);
     }
 
     temp = p.bk;
@@ -294,7 +295,7 @@ U64 blackAttackBoard(State p) {
     return (attackTable);
 }
 
-U64 whiteAttackBoard(State p) {
+U64 whiteAttackBoard(State p, RookMagic *rookMagic, BishopMagic *bishopMagic) {
     U64 attackTable = 0;
     U64 occupied = allOccupied(p);
     
@@ -313,19 +314,19 @@ U64 whiteAttackBoard(State p) {
     temp = p.wb;
     while(temp) {
         int square = popLSB(&temp);
-        attackTable |= generateBishopMove(square, occupied);
+        attackTable |= getBishopMove(bishopMagic, square, occupied);
     }
 
     temp = p.wr;
     while(temp) {
         int square = popLSB(&temp);
-        attackTable |= generateRookMove(square, occupied);
+        attackTable |= getRookMove(rookMagic, square, occupied);
     }
 
     temp = p.wq;
     while(temp) {
         int square = popLSB(&temp);
-        attackTable |= generateQueenMove(square, occupied);
+        attackTable |= getRookMove(rookMagic, square, occupied) | getBishopMove(bishopMagic, square, occupied);
     }
 
     temp = p.wk;
@@ -337,10 +338,10 @@ U64 whiteAttackBoard(State p) {
     return (attackTable);
 }
 
-bool isInCheck(State p) {
+bool isInCheck(State p, RookMagic *rookMagic, BishopMagic *bishopMagic) {
     if (p.turn == WHITE) {
-        return ((p.wk & blackAttackBoard(p)) > 0);
+        return ((p.wk & blackAttackBoard(p, rookMagic, bishopMagic)) > 0);
     } else {
-        return ((p.bk & whiteAttackBoard(p)) > 0);
+        return ((p.bk & whiteAttackBoard(p, rookMagic, bishopMagic)) > 0);
     }
 }

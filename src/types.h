@@ -48,6 +48,22 @@ typedef struct{
     U64 promotion;
 } PerftResult;
 
+typedef struct {
+    U64 mask;
+    U64 magic;
+    U64 shift;
+} MagicEntry;
+
+typedef struct {
+    MagicEntry entry[64];
+    U64 attacks[64][512];
+} BishopMagic;
+
+typedef struct {
+    MagicEntry entry[64];
+    U64 attacks[64][4096];
+} RookMagic;
+
 extern State currentState;
 extern State prevState;
 extern State prevprevState; 
