@@ -95,7 +95,14 @@ int pieceSquareTable(U64 board, int pieceSquareTable[64], int turn) {
     int score = 0;
     while(board) {
         int square = popLSB(&board);
-        int index = (turn == 1) ? (square) : (63 - square);
+        int index = (turn == 1) ? (square) : (square ^ 56); 
+        // 63 in binary is 111111
+        // 63 should become 7 which is 000111
+        // 53 in binary is 111000
+        // and xor will do the job. 
+        // This holds true for any pattern.
+        // more can be found here: https://www.chessprogramming.org/Flipping_Mirroring_and_Rotating
+        
         score += pieceSquareTable[index];
     }
     return score;
@@ -127,24 +134,26 @@ int positionEvaluation(State p) {
 }
 
 
-/*
-int negaMax( int depth ) {
-    if ( depth == 0 ) return evaluate();
-    int max = -oo;
-    for ( all moves)  {
-        score = -negaMax( depth - 1 );
-        if( score > max )
-            max = score;
-    }
-    return max;
-}
-*/
+/* I did not came up with this algorithm..
+ * 
+ * Pseudo code:
+ *
+ * int negaMax( int depth ) {
+ *     if ( depth == 0 ) return evaluate();
+ *     int max = -oo;
+ *     for ( all moves)  {
+ *         score = -negaMax( depth - 1 );
+ *         if( score > max )
+ *             max = score;
+ *     }
+ *     return max;
+ * }
+ */
 
-// I did not came up with this algorithm...
 // https://en.wikipedia.org/wiki/Negamax
 int negamax(State p, State prev, int depth, int alpha, int beta, RookMagic *rookMagic, BishopMagic *bishopMagic) {
     // alpha and beta are lower and upper bound for a child node.
-    // you start from alpha -infinity, beta +infinity
+    // The idea is you start from alpha -infinity, beta +infinity, and 
     // if your score gets out of this bound, you cut off the search
 
     // base case
@@ -206,11 +215,13 @@ int negamax(State p, State prev, int depth, int alpha, int beta, RookMagic *rook
 }
 
 Move negmaxBestMove(State p, State prev, int depth, RookMagic *rookMagic, BishopMagic *bishopMagic) {
-    Move moves[218];
+    Move moves[218]; // 218 is the max possible moves,  
+                     // this stores every legal move
+                     
     int moveCount = generateLegalMove(p, prev, moves, 218, rookMagic, bishopMagic);
-
     int numPieces = __builtin_popcountll(allOccupied(p));
 
+    // hardcoded search depth
     if (numPieces <= 10) {
         depth = 8;
     } else if (numPieces < 15){
@@ -229,6 +240,7 @@ Move negmaxBestMove(State p, State prev, int depth, RookMagic *rookMagic, Bishop
         //printf("root move %d -> %d score %d\n", moves[i].from, moves[i].to, score);
 
         // you found a better move. Nice!
+        // (basically, it is trying every square (and its branch), to see if its a good move)
         if (score > alpha) {
             alpha = score;
             best = moves[i];
@@ -237,20 +249,12 @@ Move negmaxBestMove(State p, State prev, int depth, RookMagic *rookMagic, Bishop
     return best;
 }
 
-
 int main() {
     RookMagic rookMagic;
     BishopMagic bishopMagic;
     prepareMagic(&rookMagic, &bishopMagic);
 
-    runPerft(&rookMagic, &bishopMagic);
-}
-
-/*
-int main() {
-    RookMagic rookMagic;
-    BishopMagic bishopMagic;
-    prepareMagic(&rookMagic, &bishopMagic);
+    // runPerft(&rookMagic, &bishopMagic);
 
     currentState = prevState = prevprevState = initializeState();
    
@@ -262,7 +266,7 @@ int main() {
         int moveCount = generateLegalMove(currentState, prevState, moves, 218, &rookMagic, &bishopMagic);
         
         if (moveCount == 0) { //if there's no move, it's either mate or stalemate, for now, I do not care
-            if (isInCheck(currentState)) {
+            if (isInCheck(currentState, &rookMagic, &bishopMagic)) {
                 printf("Checkmate!\n");
             } else {
                 printf("Stalemate\n");
@@ -290,4 +294,3 @@ int main() {
 
     return 0;
 }
-*/

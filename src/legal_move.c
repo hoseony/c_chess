@@ -6,6 +6,7 @@
 #include "move_generation.h"
 #include "bitboards.h"
 #include "finding_magic.h"
+#include "parse.h"
 
 // -------- function prototypes ------
 U64 generateMoveFromTargetSquare(State *p, State *prev, int targetSquare, U64 occupied, RookMagic *rookMagic, BishopMagic *bishopMagic);
