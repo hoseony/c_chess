@@ -15,8 +15,8 @@ U64 generateBlackPawnMove(int square, U64 occupied, State p, State prev);
 U64 pawnPromotion(U64 board);
 U64 blackAttackBoard(State p, RookMagic *rookMagic, BishopMagic *bishopMagic);
 U64 whiteAttackBoard(State p, RookMagic *rookMagic, BishopMagic *bishopMagic);
-U64 generateBlackKingCastleMove(State p, RookMagic *rookMagic, BishopMagic *bishopMagic);
-U64 generateWhiteKingCastleMove(State p, RookMagic *rookMagic, BishopMagic *bishopMagic);
+U64 generateBlackKingCastleMove(State p, U64 occupied, U64 whiteAttack, RookMagic *rookMagic, BishopMagic *bishopMagic);
+U64 generateWhiteKingCastleMove(State p, U64 occupied, U64 blackAttack, RookMagic *rookMagic, BishopMagic *bishopMagic);
 bool isInCheck(State p, RookMagic *rookMagic, BishopMagic *bishopMagic);
 
 // --------- generate move ----------
@@ -192,10 +192,8 @@ U64 generateBlackPawnMove(int square, U64 occupied, State p, State prev) {
     return blackPawnMove;
 }
 
-U64 generateWhiteKingCastleMove(State p, RookMagic *rookMagic, BishopMagic *bishopMagic) {
+U64 generateWhiteKingCastleMove(State p, U64 occupied, U64 blackAttack, RookMagic *rookMagic, BishopMagic *bishopMagic) {
     U64 castlingMove = 0;
-    U64 occupied = allOccupied(p);
-    U64 blackAttack = blackAttackBoard(p, rookMagic, bishopMagic);
 
     if (p.castleState == 0b0000) {
         return 0;
@@ -216,10 +214,8 @@ U64 generateWhiteKingCastleMove(State p, RookMagic *rookMagic, BishopMagic *bish
     return castlingMove;
 }
 
-U64 generateBlackKingCastleMove(State p, RookMagic *rookMagic, BishopMagic *bishopMagic) {
+U64 generateBlackKingCastleMove(State p, U64 occupied, U64 whiteAttack, RookMagic *rookMagic, BishopMagic *bishopMagic) {
     U64 castlingMove = 0;
-    U64 occupied = allOccupied(p);
-    U64 whiteAttack = whiteAttackBoard(p, rookMagic, bishopMagic);
 
     if (p.castleState == 0b0000) {
         return 0;
@@ -240,12 +236,7 @@ U64 generateBlackKingCastleMove(State p, RookMagic *rookMagic, BishopMagic *bish
     return castlingMove;
 }
 
-U64 pawnPromotion(U64 board) {
-    // I think this can be combined because white pawn 
-    // cannot go to the rank 1 and black pawn cannot go to the 
-    // rank 8 
-    // but idk if you want to make it so that you can also play really weird Position
-    // maybe you need to separate this.
+U64 pawnPromotion(State *p) {
 
     return 0;
 }
@@ -339,7 +330,7 @@ U64 whiteAttackBoard(State p, RookMagic *rookMagic, BishopMagic *bishopMagic) {
 }
 
 bool isInCheck(State p, RookMagic *rookMagic, BishopMagic *bishopMagic) {
-    if (p.turn == WHITE) {
+    if (p.turn == SIDE_WHITE) {
         return ((p.wk & blackAttackBoard(p, rookMagic, bishopMagic)) > 0);
     } else {
         return ((p.bk & whiteAttackBoard(p, rookMagic, bishopMagic)) > 0);

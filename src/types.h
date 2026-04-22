@@ -1,8 +1,8 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-#define WHITE 0
-#define BLACK 1
+#define SIDE_WHITE 0
+#define SIDE_BLACK 1
 
 #include <stdbool.h>
 

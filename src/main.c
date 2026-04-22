@@ -2,13 +2,18 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
-#include <limits.h>
 
 #include "bitboards.h"
 #include "move_generation.h"
 #include "parse.h"
 #include "legal_move.h"
 #include "finding_magic.h"
+
+int pieceSquareTable(U64 board, int pieceSquareTable[64], int turn);
+int positionEvaluation(State p);
+int negamax(State *p, State prev, int depth, int alpha, int beta, RookMagic *rookMagic, BishopMagic *bishopMagic);
+Move negmaxBestMove(State *p, State prev, int depth, RookMagic *rookMagic, BishopMagic *bishopMagic);
+int qsearch(State *p, State prev, int depth, int alpha, int beta, RookMagic *rookMagic, BishopMagic *bishopMagic);
 
 State currentState;
 State prevState;
@@ -37,7 +42,7 @@ static int kingEnd[64] = {
 };
 
 static int pawn[64] = {
-    00, 00, 00,  00,  00, 00, 00, 00,
+    50, 50, 50,  50,  50, 50, 50, 50,
     00, 00, 00,  00,  00, 00, 00, 00,
     00, 00, 00,  10,  10, 00, 00, 00,
     00, 00, 10,  20,  20, 10, 00, 00,
@@ -116,21 +121,21 @@ int positionEvaluation(State p) {
     // https://gcc.gnu.org/onlinedocs/gcc/Bit-Operation-Builtins.html
     // more funny things
 
-    score += __builtin_popcountll(p.wp) * 100 + pieceSquareTable(p.wp, pawn, WHITE);
-    score += __builtin_popcountll(p.wn) * 300 + pieceSquareTable(p.wn, knight, WHITE);
-    score += __builtin_popcountll(p.wb) * 300 + pieceSquareTable(p.wb, bishop, WHITE);
-    score += __builtin_popcountll(p.wr) * 500 + pieceSquareTable(p.wr, rook, WHITE);
-    score += __builtin_popcountll(p.wq) * 900 + pieceSquareTable(p.wq, queen, WHITE);
-    score += pieceSquareTable(p.wk, king, WHITE);
+    score += __builtin_popcountll(p.wp) * 100 + pieceSquareTable(p.wp, pawn, SIDE_WHITE);
+    score += __builtin_popcountll(p.wn) * 300 + pieceSquareTable(p.wn, knight, SIDE_WHITE);
+    score += __builtin_popcountll(p.wb) * 300 + pieceSquareTable(p.wb, bishop, SIDE_WHITE);
+    score += __builtin_popcountll(p.wr) * 500 + pieceSquareTable(p.wr, rook, SIDE_WHITE);
+    score += __builtin_popcountll(p.wq) * 900 + pieceSquareTable(p.wq, queen, SIDE_WHITE);
+    score += pieceSquareTable(p.wk, king, SIDE_WHITE);
 
-    score -= __builtin_popcountll(p.bp) * 100 + pieceSquareTable(p.bp, pawn, BLACK);
-    score -= __builtin_popcountll(p.bn) * 300 + pieceSquareTable(p.bn, knight, BLACK);
-    score -= __builtin_popcountll(p.bb) * 300 + pieceSquareTable(p.bb, bishop, BLACK);
-    score -= __builtin_popcountll(p.br) * 500 + pieceSquareTable(p.br, rook, BLACK);
-    score -= __builtin_popcountll(p.bq) * 900 + pieceSquareTable(p.bq, queen, BLACK);
-    score -= pieceSquareTable(p.bk, king, BLACK);
+    score -= __builtin_popcountll(p.bp) * 100 + pieceSquareTable(p.bp, pawn, SIDE_BLACK);
+    score -= __builtin_popcountll(p.bn) * 300 + pieceSquareTable(p.bn, knight, SIDE_BLACK);
+    score -= __builtin_popcountll(p.bb) * 300 + pieceSquareTable(p.bb, bishop, SIDE_BLACK);
+    score -= __builtin_popcountll(p.br) * 500 + pieceSquareTable(p.br, rook, SIDE_BLACK);
+    score -= __builtin_popcountll(p.bq) * 900 + pieceSquareTable(p.bq, queen, SIDE_BLACK);
+    score -= pieceSquareTable(p.bk, king, SIDE_BLACK);
 
-    return (p.turn == WHITE) ? (score) : (-score);
+    return (p.turn == SIDE_WHITE) ? (score) : (-score);
 }
 
 
@@ -151,21 +156,22 @@ int positionEvaluation(State p) {
  */
 
 // https://en.wikipedia.org/wiki/Negamax
-int negamax(State p, State prev, int depth, int alpha, int beta, RookMagic *rookMagic, BishopMagic *bishopMagic) {
+int negamax(State *p, State prev, int depth, int alpha, int beta, RookMagic *rookMagic, BishopMagic *bishopMagic) {
     // alpha and beta are lower and upper bound for a child node.
     // The idea is you start from alpha -infinity, beta +infinity, and 
     // if your score gets out of this bound, you cut off the search
 
     // base case
     if (depth == 0) {
-        return positionEvaluation(p);
-        // this should be qsaerch
+        // for now, I hard coded the q search depth, which defeat the half of its point, but, we need to add move ordering and timeout if we want to do this.
+        // return positionEvaluation(*p);
+        return qsearch(p, prev, 3, alpha, beta, rookMagic, bishopMagic);
         // https://www.dogeystamp.com/chess5/
     }
 
     // get possible moves
     Move moves[218];
-    int moveCount = generateLegalMove(p, prev, moves, 218, rookMagic, bishopMagic);
+    int moveCount = generateLegalMove(*p, prev, moves, 218, rookMagic, bishopMagic);
 
     int value = -999999; // this will keep track of the best score
 
@@ -173,7 +179,7 @@ int negamax(State p, State prev, int depth, int alpha, int beta, RookMagic *rook
 
     // checkmate or stalemate
     if (moveCount == 0) {
-        if (isInCheck(p, rookMagic, bishopMagic)) {
+        if (isInCheck(*p, rookMagic, bishopMagic)) {
             // being mated is bad
             return -999999;
         } else {
@@ -184,12 +190,12 @@ int negamax(State p, State prev, int depth, int alpha, int beta, RookMagic *rook
     }
 
     for(int i = 0; i < moveCount; i++) {
-        State temp = p;
+        State temp = *p;
         // you do the move
 
         doMove(&temp, &prev, moves[i].from, moves[i].to, false);
 
-        int score = -negamax(temp, p, depth - 1, -beta, -alpha, rookMagic, bishopMagic);
+        int score = -negamax(&temp, *p, depth - 1, -beta, -alpha, rookMagic, bishopMagic);
        
         // This pruning way is called fail-soft variation of alpha-beta prunning
         
@@ -214,12 +220,12 @@ int negamax(State p, State prev, int depth, int alpha, int beta, RookMagic *rook
     return value;
 }
 
-Move negmaxBestMove(State p, State prev, int depth, RookMagic *rookMagic, BishopMagic *bishopMagic) {
+Move negmaxBestMove(State *p, State prev, int depth, RookMagic *rookMagic, BishopMagic *bishopMagic) {
     Move moves[218]; // 218 is the max possible moves,  
                      // this stores every legal move
                      
-    int moveCount = generateLegalMove(p, prev, moves, 218, rookMagic, bishopMagic);
-    int numPieces = __builtin_popcountll(allOccupied(p));
+    int moveCount = generateLegalMove(*p, prev, moves, 218, rookMagic, bishopMagic);
+    int numPieces = __builtin_popcountll(allOccupied(*p));
 
     // hardcoded search depth
     if (numPieces <= 10) {
@@ -233,11 +239,11 @@ Move negmaxBestMove(State p, State prev, int depth, RookMagic *rookMagic, Bishop
     int beta = 999999;
 
     for(int i = 0; i < moveCount; i++) {
-        State temp = p;
+        State temp = *p;
         doMove(&temp, &prev, moves[i].from, moves[i].to, false);
 
-        int score = -negamax(temp, p, depth - 1, -beta, -alpha, rookMagic, bishopMagic);
-        //printf("root move %d -> %d score %d\n", moves[i].from, moves[i].to, score);
+        int score = -negamax(&temp, *p, depth - 1, -beta, -alpha, rookMagic, bishopMagic);
+        //printf("negamax: root move %d -> %d score %d\n", moves[i].from, moves[i].to, score);
 
         // you found a better move. Nice!
         // (basically, it is trying every square (and its branch), to see if its a good move)
@@ -249,12 +255,65 @@ Move negmaxBestMove(State p, State prev, int depth, RookMagic *rookMagic, Bishop
     return best;
 }
 
+// https://www.chessprogramming.org/Quiescence_Search
+int qsearch(State *p, State prev, int depth, int alpha, int beta, RookMagic *rookMagic, BishopMagic *bishopMagic) {
+    if (depth == 0) {
+        return positionEvaluation(*p);
+    }
+
+    int staticEval = positionEvaluation(*p);
+
+    int best_value = staticEval;
+    
+    if (best_value >= beta) {
+        return best_value;
+    }
+
+    if (best_value > alpha) {
+        alpha = best_value;
+    }
+
+    Move moves[218];
+    int moveCount = generateLegalMove(*p, prev, moves, 218, rookMagic, bishopMagic);
+    U64 enemyBoard = (p->turn == SIDE_WHITE) ? (blackOccupied(*p)) : (whiteOccupied(*p));
+
+    for (int i = 0; i < moveCount; i++) {
+        U64 toBoard = (1ULL << moves[i].to);
+
+        // you want to keep searching the captures (moves that are not quite)
+        if ( (toBoard & enemyBoard) == 0 ) {
+            continue;
+        }
+
+        State temp = *p;
+        doMove(&temp, &prev, moves[i].from, moves[i].to, false);
+
+        int score = -qsearch(&temp, *p, depth - 1, -beta, -alpha, rookMagic, bishopMagic);
+        //printf("qsearch: root move %d -> %d score %d\n", moves[i].from, moves[i].to, score);
+
+        if (score >= beta) {
+            return score;
+        } 
+
+        if (score > best_value) {
+            best_value = score;
+        }
+
+        if (score > alpha) {
+            alpha = score;
+        }
+    }
+
+    return alpha;
+}
+
+
 int main() {
     RookMagic rookMagic;
     BishopMagic bishopMagic;
     prepareMagic(&rookMagic, &bishopMagic);
 
-    // runPerft(&rookMagic, &bishopMagic);
+    runPerft(&rookMagic, &bishopMagic);
 
     currentState = prevState = prevprevState = initializeState();
    
@@ -279,7 +338,7 @@ int main() {
             break;
         }
 
-        Move m = negmaxBestMove(currentState, prevState, 5, &rookMagic, &bishopMagic);
+        Move m = negmaxBestMove(&currentState, prevState, 5, &rookMagic, &bishopMagic);
 
         State oldState = currentState;
         printf("playing: %d -> %d\n", m.from, m.to);

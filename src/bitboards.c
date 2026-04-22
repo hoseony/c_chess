@@ -90,7 +90,7 @@ State initializeState() {
     p.bq = 0x0800000000000000;
     p.bk = 0x1000000000000000;
 
-    p.turn = WHITE;
+    p.turn = SIDE_WHITE;
 
     p.castleState = 0b1111;
     p.fiftyMoveRule = 0;
@@ -142,7 +142,7 @@ void printGameBoard(State p) {
     }
 
     printf("--- ");
-    if(p.turn == WHITE) {
+    if(p.turn == SIDE_WHITE) {
         printf("White to move");
     } else {
         printf("Black to move");

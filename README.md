@@ -1,8 +1,8 @@
-# C_Chess
+# CFish
 The goal of this project is to make a working bitboard based chess engine in C.
 
 ## Acknowledgement
-This project would not have been possible without these sources. Thank you for the authors, and I hope you find it useful and interesting! 
+This project was definitely not an easy project, and it would not have been possible without these sources. Thank you for the authors, and I hope you find it useful and interesting! 
 
 Chess pieces png are taken from [greenchess](https://greenchess.net/info.php?item=downloads).
 
@@ -19,7 +19,8 @@ The following Resources were especially helpful on the making of the project.
 - [Algorithms Explained – minimax and alpha-beta pruning](https://www.youtube.com/watch?v=l-hh51ncgDI)
 - [DogeyStamp](https://www.dogeystamp.com/index.html)
 - [Forsyth-Edwards Notation (FEN)](https://www.chess.com/terms/fen-chess)
-
+- [Negamax Algorithm](https://mintlify.wiki/victoribironke/marlin/concepts/negamax)
+- [Chess Move Generation with Magic Bitboards](https://essays.jwatzman.org/essays/chess-move-generation-with-magic-bitboards.html)
 Additional Resources that would have been useful (that we found too late).
 - [Writing a chess engine in C++](https://ameye.dev/notes/chess-engine/)
-
+- [Magic Move-Bitboard Generation in Computer Chess](https://pradu.us/old/Nov27_2008/Buzz/research/magic/Bitboards.pdf)

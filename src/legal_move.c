@@ -9,24 +9,24 @@
 #include "parse.h"
 
 // -------- function prototypes ------
-U64 generateMoveFromTargetSquare(State *p, State *prev, int targetSquare, U64 occupied, RookMagic *rookMagic, BishopMagic *bishopMagic);
+U64 generateMoveFromTargetSquare(State *p, State *prev, int targetSquare, U64 occupied, U64 attackBoard, RookMagic *rookMagic, BishopMagic *bishopMagic);
 void doMove(State *p, State *prev, int from, int to, bool perftQuestionMark);
-int areYouMated(State *p, State *prev, RookMagic *rookMagic, BishopMagic *bishopMagic);
+int areYouMated(State *p, State *prev, RookMagic *rookMagic, BishopMagic *bishopMagic, U64 occupied);
 int generateLegalMove(State state, State prevState, Move *moves, int maxMoves, RookMagic *rookMagic, BishopMagic *bishopMagic);
 PerftResult perft(State p, State prev, int depth, RookMagic *rookMagic, BishopMagic *bishopMagic);
 void runPerft(RookMagic *rookMagic, BishopMagic *bishopMagic);
 // -----------------------------------
 
 // Note to Thomas: Make more efficient 
-U64 generateMoveFromTargetSquare(State *p, State *prev, int targetSquare, U64 occupied, RookMagic *rookMagic, BishopMagic *bishopMagic) {
+U64 generateMoveFromTargetSquare(State *p, State *prev, int targetSquare, U64 occupied, U64 attackBoard, RookMagic *rookMagic, BishopMagic *bishopMagic) {
     
     U64 square = (1ULL << targetSquare);
     bool turn = p->turn;
 
-    if((square & p->wp) && (turn == WHITE)) {
+    if((square & p->wp) && (turn == SIDE_WHITE)) {
         return generateWhitePawnMove(targetSquare, occupied, *p, *prev);
     }
-    else if ((square & p->bp) && (turn == BLACK)) {
+    else if ((square & p->bp) && (turn == SIDE_BLACK)) {
         return generateBlackPawnMove(targetSquare, occupied, *p, *prev);
     }
     else if((square & p->wn) || (square & p->bn))  {
@@ -46,7 +46,7 @@ U64 generateMoveFromTargetSquare(State *p, State *prev, int targetSquare, U64 oc
         //return generateQueenMove(targetSquare, occupied);
     }
     else if((square & p->wk) || (square & p->bk)) {
-        return generateKingMove(targetSquare) | ((generateWhiteKingCastleMove(*p, rookMagic, bishopMagic) * ((square & p->wk) > 0) + generateBlackKingCastleMove(*p, rookMagic, bishopMagic) * ((square & p->bk) > 0)));
+        return generateKingMove(targetSquare) | ((generateWhiteKingCastleMove(*p, occupied, attackBoard, rookMagic, bishopMagic) * ((square & p->wk) > 0) + generateBlackKingCastleMove(*p, occupied, attackBoard, rookMagic, bishopMagic) * ((square & p->bk) > 0)));
     } else {
         return 0;
     }
@@ -108,7 +108,7 @@ void doMove(State *p, State *prev, int from, int to, bool perftQuestionMark) {
     // =====================moving pieces ======================
     // enPassant Caputre and Move and Castling
     if ( (toBoard & enPassantBitboard) && ( (wasThatWhitePawn) || (wasThatBlackPawn) )) {
-        if(p->turn == WHITE) {
+        if(p->turn == SIDE_WHITE) {
             moveBit(&p->wp, from, to);
             removeBit(&p->bp, (to - 8));
         } else {
@@ -174,7 +174,7 @@ void doMove(State *p, State *prev, int from, int to, bool perftQuestionMark) {
     p->threeMoveRepetition = threeFold;
 }
 
-int areYouMated(State *p, State *prev, RookMagic *rookMagic, BishopMagic *bishopMagic) { 
+int areYouMated(State *p, State *prev, RookMagic *rookMagic, BishopMagic *bishopMagic, U64 occupied) { 
     // This can be done by asking, "do you have any move that can get you out from the check?"
     // first, check if you are in check, if you are not, you can not be mated.
 
@@ -184,8 +184,8 @@ int areYouMated(State *p, State *prev, RookMagic *rookMagic, BishopMagic *bishop
         return 0;
     }
 
-    U64 occupied = allOccupied(state);
-    U64 friendlyBoard = (state.turn == WHITE) ? whiteOccupied(state) : blackOccupied(state);
+    U64 friendlyBoard = (state.turn == SIDE_WHITE) ? whiteOccupied(state) : blackOccupied(state);
+    U64 enemyBoard = (state.turn == SIDE_BLACK) ? whiteOccupied(state) : blackOccupied(state);
 
     // the, for every piece you have, let's find possible moves, and move them here and there
     // If you moved it, and stil in check for 
@@ -195,7 +195,7 @@ int areYouMated(State *p, State *prev, RookMagic *rookMagic, BishopMagic *bishop
             continue;
         }
 
-        U64 candidateMoves = generateMoveFromTargetSquare(&state, prev, i, occupied, rookMagic, bishopMagic);
+        U64 candidateMoves = generateMoveFromTargetSquare(&state, prev, i, occupied, enemyBoard, rookMagic, bishopMagic);
         U64 possibleMoves = candidateMoves & ~friendlyBoard;
 
         while (possibleMoves > 0) {
@@ -220,14 +220,15 @@ int generateLegalMove(State state, State prevState, Move *moves, int maxMoves, R
     int counter = 0;
 
     U64 occupied = allOccupied(state);
-    U64 friendlyBoard = (state.turn == WHITE) ? whiteOccupied(state) : blackOccupied(state);
+    U64 friendlyBoard = (state.turn == SIDE_WHITE) ? whiteOccupied(state) : blackOccupied(state);
+    U64 enemyBoard = (state.turn == SIDE_BLACK) ? whiteOccupied(state) : blackOccupied(state);
 
     for (int i = 0; i < 64; i++) {
         if ( ((1ULL << i) & friendlyBoard) == 0 ) {
             continue;
         }
        
-        U64 possibleMoves = generateMoveFromTargetSquare(&state, &prevState, i, occupied, rookMagic, bishopMagic) & ~friendlyBoard;
+        U64 possibleMoves = generateMoveFromTargetSquare(&state, &prevState, i, occupied, enemyBoard, rookMagic, bishopMagic) & ~friendlyBoard;
 
         while (possibleMoves > 0) {
             int to = popLSB(&possibleMoves);
@@ -262,8 +263,8 @@ PerftResult perft(State p, State prev, int depth, RookMagic *rookMagic, BishopMa
     }
 
     U64 occupied = allOccupied(p);
-    U64 friendlyBoard = (p.turn == WHITE) ? whiteOccupied(p) : blackOccupied(p);
-    U64 enemyBoard = (p.turn == WHITE) ? blackOccupied(p) : whiteOccupied(p);
+    U64 friendlyBoard = (p.turn == SIDE_WHITE) ? whiteOccupied(p) : blackOccupied(p);
+    U64 enemyBoard = (p.turn == SIDE_WHITE) ? blackOccupied(p) : whiteOccupied(p);
 
     for (int i = 0; i < 64; i++) {
         if ( ((1ULL << i) & friendlyBoard) == 0 ) {
@@ -271,7 +272,7 @@ PerftResult perft(State p, State prev, int depth, RookMagic *rookMagic, BishopMa
         }
 
         // generate pseudo-legal moves
-        U64 possibleMoves = generateMoveFromTargetSquare(&p, &prev, i, occupied, rookMagic, bishopMagic) & ~friendlyBoard;
+        U64 possibleMoves = generateMoveFromTargetSquare(&p, &prev, i, occupied, enemyBoard, rookMagic, bishopMagic) & ~friendlyBoard;
 
         while (possibleMoves) {
             // get lsb index

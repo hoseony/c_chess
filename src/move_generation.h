@@ -18,8 +18,8 @@ U64 generateWhitePawnAttack(int square);
 U64 generateBlackPawnAttack(int square);
 U64 blackAttackBoard(State p, RookMagic *rookMagic, BishopMagic *bishopMagic);
 U64 whiteAttackBoard(State p, RookMagic *rookMagic, BishopMagic *bishopMagic);
-U64 generateBlackKingCastleMove(State p, RookMagic *rookMagic, BishopMagic *bishopMagic);
-U64 generateWhiteKingCastleMove(State p, RookMagic *rookMagic, BishopMagic *bishopMagic);
+U64 generateBlackKingCastleMove(State p, U64 occupied, U64 whiteAttack, RookMagic *rookMagic, BishopMagic *bishopMagic);
+U64 generateWhiteKingCastleMove(State p, U64 occupied, U64 blackAttack, RookMagic *rookMagic, BishopMagic *bishopMagic);
 bool isInCheck(State p, RookMagic *rookMagic, BishopMagic *bishopMagic);
 
 #endif

@@ -41,7 +41,7 @@ State fenToState(char *fen) {
         fen++;
     }
 
-    state.turn = (*fen == 'b') ? BLACK : WHITE;
+    state.turn = (*fen == 'b') ? SIDE_BLACK : SIDE_WHITE;
     fen++;
 
     while(*fen == ' ') {
