@@ -9,16 +9,23 @@
 #include "legal_move.h"
 #include "finding_magic.h"
 
+// ---------------------------------------------------------------
 int pieceSquareTable(U64 board, int pieceSquareTable[64], int turn);
 int positionEvaluation(State p);
 int negamax(State *p, State prev, int depth, int alpha, int beta, RookMagic *rookMagic, BishopMagic *bishopMagic);
 Move negmaxBestMove(State *p, State prev, int depth, RookMagic *rookMagic, BishopMagic *bishopMagic);
 int qsearch(State *p, State prev, int depth, int alpha, int beta, RookMagic *rookMagic, BishopMagic *bishopMagic);
+// ---------------------------------------------------------------
 
 State currentState;
 State prevState;
 State prevprevState; 
 
+clock_t searchStartTime;
+int searchTimeLimit;
+
+// ---------------------------------------------------------------
+// Piece Square Table
 static int king[64] = {
     -80, -80, -80, -80, -80, -80, -80, -80,
     -80, -80, -80, -80, -80, -80, -80, -80,
@@ -42,14 +49,14 @@ static int kingEnd[64] = {
 };
 
 static int pawn[64] = {
-    50, 50, 50,  50,  50, 50, 50, 50,
-    00, 00, 00,  00,  00, 00, 00, 00,
-    00, 00, 00,  10,  10, 00, 00, 00,
-    00, 00, 10,  20,  20, 10, 00, 00,
-    00, 00, 10,  20,  20, 10, 00, 00,
-    05, 00, 00,  10,  10, 00, 00, 05,
-    00, 00, 00, -15, -15, 00, 00, 00,
-    00, 00, 00,  00,  00, 00, 00, 00,
+    900, 900, 900,  900,  900, 900, 900, 900, // promotion goated
+    00,  00,  00,   00,   00,  00,  00,  00,
+    00,  00,  00,   10,   10,  00,  00,  00,
+    00,  00,  10,   20,   20,  10,  00,  00,
+    00,  00,  10,   20,   20,  10,  00,  00,
+    05,  00,  00,   00,   00,  00,  00,  05,
+    00,  00,  00,  -15,  -15,  00,  00,  00,
+    00,  00,  00,   00,   00,  00,  00,  00,
 };
 
 static int knight[64] = {
@@ -67,9 +74,9 @@ static int bishop[64] = {
     -10, -10, -10, -10, -10, -10, -10, -10,
     -10,  00,  10,  10,  10,  10,  00, -10,
     -10,  10,  15,  15,  15,  15,  10, -10,
-    -10,  10,  15,  20,  20,  15,  10, -10,
-    -10,  10,  15,  25,  25,  15,  10, -10,
+    -10,  10,  15,  10,  10,  15,  10, -10,
     -10,  10,  15,  15,  15,  15,  10, -10,
+    -10,  10,  15,  05,  05,  15,  10, -10,
     -10,  00,  10,  10,  10,  10,  00, -10,
     -10, -10, -30, -10, -10, -30, -10, -10,
 };
@@ -95,6 +102,8 @@ static int queen[64] = {
     -10, 00, 00, 00, 00, 00, 00, -10,
      00, 00, 00, 10, 10, 00, 00,  00,
 };
+
+// ---------------------------------------------------------------
 
 int pieceSquareTable(U64 board, int pieceSquareTable[64], int turn) {
     int score = 0;
@@ -161,11 +170,22 @@ int negamax(State *p, State prev, int depth, int alpha, int beta, RookMagic *roo
     // The idea is you start from alpha -infinity, beta +infinity, and 
     // if your score gets out of this bound, you cut off the search
 
+    // This is for setting timeout for the search (since of course)
+    // https://pubs.opengroup.org/onlinepubs/7908799/xsh/time.h.html
+    static int nodeCount = 0; 
+    // I do this to check the timeout condition less... 
+    // Hope this helps a little bit in terms of performance
+    if ((++nodeCount % 1024) == 0) {
+        if (((clock() - searchStartTime) * 1000 / CLOCKS_PER_SEC) > searchTimeLimit) {
+            // printf("search timeout\n");
+            return 0;
+        }
+    }
+
     // base case
     if (depth == 0) {
-        // for now, I hard coded the q search depth, which defeat the half of its point, but, we need to add move ordering and timeout if we want to do this.
         // return positionEvaluation(*p);
-        return qsearch(p, prev, 3, alpha, beta, rookMagic, bishopMagic);
+        return qsearch(p, prev, 6, alpha, beta, rookMagic, bishopMagic);
         // https://www.dogeystamp.com/chess5/
     }
 
@@ -252,16 +272,18 @@ Move negmaxBestMove(State *p, State prev, int depth, RookMagic *rookMagic, Bisho
             best = moves[i];
         }
     }
+
+    printf("searched depth %d, timeout: %d\n", depth, ((clock() - searchStartTime) * 1000 / CLOCKS_PER_SEC) > searchTimeLimit);
     return best;
 }
 
 // https://www.chessprogramming.org/Quiescence_Search
 int qsearch(State *p, State prev, int depth, int alpha, int beta, RookMagic *rookMagic, BishopMagic *bishopMagic) {
+    int staticEval = positionEvaluation(*p);
+    
     if (depth == 0) {
         return positionEvaluation(*p);
     }
-
-    int staticEval = positionEvaluation(*p);
 
     int best_value = staticEval;
     
@@ -307,18 +329,22 @@ int qsearch(State *p, State prev, int depth, int alpha, int beta, RookMagic *roo
     return alpha;
 }
 
-
 int main() {
     RookMagic rookMagic;
     BishopMagic bishopMagic;
     prepareMagic(&rookMagic, &bishopMagic);
 
-    runPerft(&rookMagic, &bishopMagic);
+    // runPerft(&rookMagic, &bishopMagic);
 
     currentState = prevState = prevprevState = initializeState();
    
     // list of possible moves
     Move moves[218];
+
+    char input[5];
+    Move m;
+
+    printGameBoard(currentState);
 
     while(1) {
 
@@ -338,10 +364,34 @@ int main() {
             break;
         }
 
-        Move m = negmaxBestMove(&currentState, prevState, 5, &rookMagic, &bishopMagic);
+        if (currentState.turn == SIDE_WHITE) {
+            printf("Your move?: ");
+            scanf("%s", input);
+            int from, to;
+
+            parseLAN(input, &from, &to);
+
+            bool wasThatValidMove = false;
+            for (int i = 0; i < moveCount; i++) {
+                if(moves[i].from == from && moves[i].to == to) {
+                    wasThatValidMove = true;
+                    m = moves[i];
+                    break;
+                }
+            }
+
+            if (wasThatValidMove == false) {
+                printf("Illegal Move! try again :(\n");
+                continue;
+            }
+        } else {
+            searchStartTime = clock();
+            searchTimeLimit = 5000; // ms
+            m = negmaxBestMove(&currentState, prevState, 5, &rookMagic, &bishopMagic);
+        }
 
         State oldState = currentState;
-        printf("playing: %d -> %d\n", m.from, m.to);
+        // printf("playing: %d -> %d\n", m.from, m.to);
         doMove(&currentState, &prevState, m.from, m.to, true);
 
         prevprevState = prevState;

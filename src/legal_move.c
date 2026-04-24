@@ -144,6 +144,20 @@ void doMove(State *p, State *prev, int from, int to, bool perftQuestionMark) {
         *p = su.s;
     }
 
+    // ================== Promotion ====================
+    
+    // White pawn promotion
+    if (p->wp & toBoard & BIT_8_RANK) {
+        removeBit(&p->wp, to);
+        putBit(&p->wq, to);
+    }
+
+    // Black pawn promotion
+    if (p->bp & toBoard & BIT_1_RANK) {
+        removeBit(&p->bp, to);
+        putBit(&p->bq, to);
+    }
+
     // ============== remove castling right =============
     // White
     if (wasThatWhiteKing) {

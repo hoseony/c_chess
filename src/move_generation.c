@@ -12,7 +12,7 @@ U64 generateKingMove(int square);
 U64 generateEnPassant(State current, State prev);
 U64 generateWhitePawnMove(int square, U64 occupied, State p, State prev);
 U64 generateBlackPawnMove(int square, U64 occupied, State p, State prev);
-U64 pawnPromotion(U64 board);
+U64 pawnPromotion(State *p);
 U64 blackAttackBoard(State p, RookMagic *rookMagic, BishopMagic *bishopMagic);
 U64 whiteAttackBoard(State p, RookMagic *rookMagic, BishopMagic *bishopMagic);
 U64 generateBlackKingCastleMove(State p, U64 occupied, U64 whiteAttack, RookMagic *rookMagic, BishopMagic *bishopMagic);
@@ -237,7 +237,8 @@ U64 generateBlackKingCastleMove(State p, U64 occupied, U64 whiteAttack, RookMagi
 }
 
 U64 pawnPromotion(State *p) {
-
+    // For now, we are going to force it to be a queen.
+    // --> doMove
     return 0;
 }
 

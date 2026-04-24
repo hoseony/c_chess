@@ -149,11 +149,12 @@ void printGameBoard(State p) {
     }
     printf(" ---\n\n");
 
-
+/*
     printf("************ debug infos ***********\n");
     printf("    p.castleState: 0X%X\n", p.castleState);
     printf("    p.turn: %d\n", p.turn);
     printf("    p.fiftyMoveRule: %d\n", p.fiftyMoveRule);
     printf("    p.threeMoveRepetition: %d\n", p.threeMoveRepetition);
     printf("************************************\n");
+*/
 }
