@@ -10,6 +10,7 @@
 #include "finding_magic.h"
 #include <raylib.h>
 
+
 // ---------------------------------------------------------------
 int pieceSquareTable(U64 board, int pieceSquareTable[64], int turn);
 int positionEvaluation(State p);
@@ -429,6 +430,26 @@ inline static void drawPossibleMoves(U64 moves) {
         
 }
 
+inline static int retrievePieceForUnion(State p, U64 square) {
+    StateUnion su; 
+    int i; 
+
+    su.s = p;
+    
+    int turnLoopValue = (p.turn == SIDE_WHITE) ? 0 : 5; 
+    
+
+    
+    for (i = turnLoopValue; i < turnLoopValue + 6; i++) {
+        if ((su.pieces[i] & square) > 0) {
+            printf("%d\n", i);
+            return i; 
+        }
+    }
+    
+    return -1; 
+}
+
 
 int main() {
     
@@ -450,14 +471,17 @@ int main() {
 
     bool validSquareForDrawing = false; 
     int drawSquareClicked = -1; 
-    U64 legalMoves; 
+    int pieceSelected; 
+    U64 legalMoves, moveSelected;
+    StateUnion state_union; 
 
     InitWindow(screenWidth, screenHeight, "Chess!");
     Vector2 mousePosition; 
     
-    SetTargetFPS(60); 
+    
 
-    currentState = prevState = prevprevState = initializeState();  
+    state_union.s = currentState = prevState = prevprevState = initializeState();  
+
         
     // White pieces
     piecesTextures[WHITE_PAWN]   = LoadTexture("../assets/pieces/white-pawn.png");
@@ -481,7 +505,7 @@ int main() {
     // Main game loop
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
-        /*
+        /* 
         int moveCount = generateLegalMove(currentState, prevState, moves, 218, &rookMagic, &bishopMagic);
         
         if (moveCount == 0) { //if there's no move, it's either mate or stalemate, for now, I do not care
@@ -497,7 +521,8 @@ int main() {
             printf("Draw by fiftyMoveRule\n");
             break;
         }
-
+        
+        // User Move parse 
         if (currentState.turn == SIDE_WHITE) {
             printf("Your move?: ");
             scanf("%s", input);
@@ -572,8 +597,13 @@ int main() {
 
             mousePosition = GetMousePosition();
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-                if (legalMoves & squareClickedi(mousePosition) > 0) {
-                    
+                moveSelected = legalMoves & squareClicked(mousePosition);
+                pieceSelected = squareClickedi(mousePosition); 
+                    // retrievePieceForUnion(currentState, squareClicked(mousePosition)); 
+                printBitboard(squareClicked(mousePosition));
+                if (moveSelected > 0) {
+                    doMove(&currentState, &prevState, pieceSelected, popLSB(&moveSelected), false);
+                    printGameBoard(currentState);
                 }
 
                 drawSquareClicked = squareClickedi(mousePosition);  
