@@ -266,21 +266,25 @@ int generateLegalMove(State state, State prevState, Move *moves, int maxMoves, R
     return counter; 
 }
 
-static U64 legalBitboard(State *p, State *prev, int targetSquare, U64 occupied, U64 attackBoard, RookMagic *rookMagic, BishopMagic *bishopMagic) {
-    U64 possibleMoves = generateMoveFromTargetSquare(p, prev, targetSquare, occupied, attackBoard, rookMagic, bishopMagic); 
+U64 legalBitboard(State *p, State *prev, int targetSquare, U64 occupied, U64 attackBoard, RookMagic *rookMagic, BishopMagic *bishopMagic) {
+
+    U64 friendlyBoard = (p->turn == SIDE_WHITE) ? whiteOccupied(*p) : blackOccupied(*p);
+    U64 possibleMoves = generateMoveFromTargetSquare(p, prev, targetSquare, occupied, attackBoard, rookMagic, bishopMagic) & ~friendlyBoard; 
     U64 retMoves = possibleMoves; 
+    
     while (possibleMoves > 0) {
             int to = popLSB(&possibleMoves);
 
-            State temp = state;
+            State temp = *p;
             doMove(&temp, &prevState, targetSquare, to, false);
 
             State checkCheck = temp;
             checkCheck.turn = !checkCheck.turn;
             if (isInCheck(checkCheck, rookMagic, bishopMagic)) {
-                retMoves ^ (1ULL << to);   
+                retMoves ^= (1ULL << to);   
             }
     }
+    
     return retMoves; 
 
 }
