@@ -3,7 +3,7 @@ CC = gcc
 CFLAGS_DEBUG = -Wall -Wextra -std=c11 -g -O0
 CFLAGS_BUILD = -Wall -Wextra -std=c11 -O3 
 OTHER_CFLAGS_BUILD = -lraylib -lX11 -lm 
-SRCS = bitboards.c move_generation.c parse.c legal_move.c main.c finding_magic.c
+SRCS = bitboards.c move_generation.c parse.c legal_move.c main.c finding_magic.c engine.c
 OBJS = $(addprefix ../build/, $(SRCS:.c=.o))
 
 debug: CFLAGS = $(CFLAGS_DEBUG)

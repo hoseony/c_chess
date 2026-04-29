@@ -5,6 +5,12 @@
 #define SIDE_BLACK 1
 
 #include <stdbool.h>
+#include <time.h>
+
+clock_t searchStartTime;
+int searchTimeLimit;
+static int nodeCount;
+static bool searchAborted;
 
 typedef unsigned long long int U64;
 typedef unsigned int U32; 
@@ -67,5 +73,15 @@ typedef struct {
 extern State currentState;
 extern State prevState;
 extern State prevprevState; 
+
+typedef struct {
+    State currentState;
+    State prevState;
+    Move bestMove;
+    bool searching;
+    bool doneSearching;
+    RookMagic *rookMagic;
+    BishopMagic *bishopMagic;
+} EngineThreadData;
 
 #endif
