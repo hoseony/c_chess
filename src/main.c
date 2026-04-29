@@ -471,7 +471,7 @@ int main() {
 
     bool validSquareForDrawing = false; 
     int drawSquareClicked = -1; 
-    int pieceSelected; 
+    int pieceSelected = -1; 
     U64 legalMoves, moveSelected;
     StateUnion state_union; 
 
@@ -505,7 +505,7 @@ int main() {
     // Main game loop
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
-        /* 
+        
         int moveCount = generateLegalMove(currentState, prevState, moves, 218, &rookMagic, &bishopMagic);
         
         if (moveCount == 0) { //if there's no move, it's either mate or stalemate, for now, I do not care
@@ -521,7 +521,9 @@ int main() {
             printf("Draw by fiftyMoveRule\n");
             break;
         }
-        
+
+        /* 
+                
         // User Move parse 
         if (currentState.turn == SIDE_WHITE) {
             printf("Your move?: ");
@@ -598,16 +600,18 @@ int main() {
             mousePosition = GetMousePosition();
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
                 moveSelected = legalMoves & squareClicked(mousePosition);
-                pieceSelected = squareClickedi(mousePosition); 
-                    // retrievePieceForUnion(currentState, squareClicked(mousePosition)); 
-                printBitboard(squareClicked(mousePosition));
-                if (moveSelected > 0) {
-                    doMove(&currentState, &prevState, pieceSelected, popLSB(&moveSelected), false);
+                
+                printBitboard(generateEnPassant(currentState, prevState)); 
+
+                if (moveSelected > 0 && pieceSelected > -1) {
+                    doMove(&currentState, &prevState, pieceSelected, popLSB(&moveSelected), true);
                     printGameBoard(currentState);
                 }
 
                 drawSquareClicked = squareClickedi(mousePosition);  
+                pieceSelected = squareClickedi(mousePosition);
             }
+
             // NOTE: Using DrawTexturePro() we can easily rotate and scale the part of the texture we draw
             // sourceRec defines the part of the texture we use for drawing
             // destRec defines the rectangle where our texture part will fit (scaling it to fit)
