@@ -378,19 +378,13 @@ inline static int indexGrid(int rank, int file) {
     return rank * 8 + file; 
 }
 
-
 static void drawPieces(State p) {
-    
-
     StateUnion su;
 
     Rectangle sourceRec; 
     Rectangle destRec;
 
-
     su.s = p; 
-
-
     for (int i = 0; i < 12; i++) {
         for (;su.pieces[i] > 0; ) {
             int square = popLSB(&su.pieces[i]);
@@ -427,7 +421,6 @@ inline static void drawPossibleMoves(U64 moves) {
                 gridStartingPointH + (7 - (square / 8)) * gridSquareLength + 3 * gridSquareLength / 8, 
                     gridSquareLength / 4, gridSquareLength / 4, highlightSquare); 
     }
-        
 }
 
 inline static int retrievePieceForUnion(State p, U64 square) {
@@ -437,8 +430,6 @@ inline static int retrievePieceForUnion(State p, U64 square) {
     su.s = p;
     
     int turnLoopValue = (p.turn == SIDE_WHITE) ? 0 : 5; 
-    
-
     
     for (i = turnLoopValue; i < turnLoopValue + 6; i++) {
         if ((su.pieces[i] & square) > 0) {
@@ -450,18 +441,15 @@ inline static int retrievePieceForUnion(State p, U64 square) {
     return -1; 
 }
 
-
 int main() {
-    
     // game logic 
-
     RookMagic rookMagic;
     BishopMagic bishopMagic;
     prepareMagic(&rookMagic, &bishopMagic);
 
     // runPerft(&rookMagic, &bishopMagic);
 
-    // list of possible moves
+    // list of all possible moves
     Move moves[218];
 
     char input[5];
@@ -471,18 +459,18 @@ int main() {
 
     bool validSquareForDrawing = false; 
     int drawSquareClicked = -1; 
-    int pieceSelected = -1; 
+    int pieceSelected = -1;
+
+    bool isValidPieceSelection = false; 
     U64 legalMoves, moveSelected;
     StateUnion state_union; 
 
     InitWindow(screenWidth, screenHeight, "Chess!");
     Vector2 mousePosition; 
-    
-    
 
     state_union.s = currentState = prevState = prevprevState = initializeState();  
-
-        
+    
+    //-------------------------------- LOADING TEXTURE ------------------------------------
     // White pieces
     piecesTextures[WHITE_PAWN]   = LoadTexture("../assets/pieces/white-pawn.png");
     piecesTextures[WHITE_KNIGHT] = LoadTexture("../assets/pieces/white-knight.png");
@@ -561,11 +549,8 @@ int main() {
         printGameBoard(currentState);
         */
 
-
         // Update
         //----------------------------------------------------------------------------------
-        //----------------------------------------------------------------------------------
-        
         // Draw
         //----------------------------------------------------------------------------------
         BeginDrawing();
@@ -574,6 +559,7 @@ int main() {
             drawSquareColors();
             drawPieces(currentState);
             
+            if (currentState.turn == SIDE_WHITE) {
             validSquareForDrawing = ((drawSquareClicked < 64 && drawSquareClicked > 0) 
                     && (1ULL << drawSquareClicked) &
                     ((currentState.turn == SIDE_WHITE) ? whiteOccupied(currentState) 
@@ -595,21 +581,36 @@ int main() {
                 drawPossibleMoves(legalMoves);
             }
 
-
-
             mousePosition = GetMousePosition();
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-                moveSelected = legalMoves & squareClicked(mousePosition);
                 
-                printBitboard(generateEnPassant(currentState, prevState)); 
+                moveSelected = legalMoves & squareClicked(mousePosition);
+                    // & (~((currentState.turn != SIDE_WHITE) ? (whiteOccupied(currentState)) : (blackOccupied(currentState))));
 
-                if (moveSelected > 0 && pieceSelected > -1) {
+                printBitboard(legalMoves);
+                isValidPieceSelection = ((1ULL << pieceSelected) & 
+                        ((currentState.turn == SIDE_WHITE) ? whiteOccupied(currentState) : blackOccupied(currentState))); 
+                if (moveSelected > 0 && pieceSelected > -1 && isValidPieceSelection) {
+                    State temp = currentState;
                     doMove(&currentState, &prevState, pieceSelected, popLSB(&moveSelected), true);
+                    // UPDATE prevState!!!
+                    prevState = temp;
+                    
                     printGameBoard(currentState);
                 }
 
                 drawSquareClicked = squareClickedi(mousePosition);  
                 pieceSelected = squareClickedi(mousePosition);
+            }
+            } else {
+                    State temp = currentState;
+                    searchStartTime = clock();
+                    searchTimeLimit = 500; // ms
+
+                    Move m = negmaxBestMove(&currentState, prevState, 5, &rookMagic, &bishopMagic);
+                    doMove(&currentState, &prevState, m.from, m.to, true);
+
+                    prevState = temp;
             }
 
             // NOTE: Using DrawTexturePro() we can easily rotate and scale the part of the texture we draw
@@ -619,7 +620,7 @@ int main() {
             // rotation defines the texture rotation (using origin as rotation point)
             
         EndDrawing();
-        //----------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------
     }
 
     // De-Initialization
