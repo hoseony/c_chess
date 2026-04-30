@@ -19,6 +19,9 @@ int MVVLVA(Move m, State *p);
 void quicksortMoves(Move *moves, int low, int high, State *state);
 // ---------------------------------------------------------------
 
+Zobrist_t zobrist;
+
+// ---------------------------------------------------------------
 // Piece Square Table
 static int king[64] = {
     -80, -80, -80, -80, -80, -80, -80, -80,
@@ -412,7 +415,21 @@ void quicksortMoves(Move *moves, int low, int high, State *state) {
 
 // -------------------- TRANSPOSITION TABLE ---------------------
 // https://en.wikipedia.org/wiki/Zobrist_hashing
-void zobristHash(State *state) {
+// https://sankethbk.github.io/blog/posts/chess_engine/2026-01-10-zobrist-hashing/
+/*
+typedef struct {
+    U64 table[12][64];
+    U64 enPassant[8]; // uhhh we probably shoud've made enpassant board on the state...
+    U64 castling;
+    U64 side;
+
+} Zobrist_t;
+
+Zobrist_t zobrist;
+*/
+// The idea follows: you just generate a random number, and then start xoring it 
+// because if you do A ^ B ^ B, it is still A. Which is such a cool idea!
+U64 zobrist_Hash(State *state) {
     StateUnion su;
     su.s = *state;
     U64 hash = 0;
@@ -421,7 +438,41 @@ void zobristHash(State *state) {
         U64 pieceBoard = su.pieces[i];
         while(pieceBoard) {
             int index = popLSB(&pieceBoard);
-
+            hash ^= zobrist.table[i][index];
         }
     }
+
+    if (state->turn == SIDE_BLACK) {
+        hash ^= zobrist.side;
+    }
+
+    return hash;
 };
+
+// Initialize the random numbers
+void Zobrist_init(State *state) {
+    srand(213456);
+
+    StateUnion su;
+    su.s = *state;
+    
+    for (int i = 0; i < 12; i++) {
+        for (int j = 0; j <64; j++) {
+            zobrist.table[i][j] = randomU64();
+        }
+    }
+/* 
+    for (int i = 0; i < 8; i++) {
+        zobrist.enPassant[i] = randomU64();
+    }
+*/
+
+    zobrist.castling = randomU64();
+    zobrist.side = randomU64();
+};
+
+// after each move, you should update the hash
+// piece follows StateUnion
+void Zobrist_update(State *state, U64 *hash, int piece, int square) {
+    *hash ^= zobrist.table[piece][square];
+}

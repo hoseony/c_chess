@@ -84,4 +84,12 @@ typedef struct {
     BishopMagic *bishopMagic;
 } EngineThreadData;
 
+typedef struct {
+    U64 table[12][64];
+    U64 enPassant[8]; // uhhh we probably shoud've made enpassant board on the state...
+    U64 castling;
+    U64 side;
+
+} Zobrist_t;
+
 #endif
