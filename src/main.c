@@ -24,10 +24,10 @@ pthread_t engineThread;
 
 void *makeEngineThread(void *arg) {
     EngineThreadData *data = (EngineThreadData *)arg;
-
+/*
     searchStartTime = clock();
     searchTimeLimit = 5000;
-
+*/
     data->bestMove = negmaxBestMove(&data->currentState, data->prevState, 5, data->rookMagic, data->bishopMagic);
     data->doneSearching = true;
     data->searching = false;
@@ -151,6 +151,8 @@ int main() {
     BishopMagic bishopMagic;
     prepareMagic(&rookMagic, &bishopMagic);
 
+
+
     // runPerft(&rookMagic, &bishopMagic);
 
     // list of all possible moves
@@ -162,7 +164,7 @@ int main() {
     // printGameBoard(currentState);
 
     bool validSquareForDrawing = false; 
-    int drawSquareClicked = -1; 
+    int drawSquareClicked = 0; 
     int pieceSelected = -1;
 
     bool isValidPieceSelection = false; 
@@ -174,6 +176,7 @@ int main() {
 
     state_union.s = currentState = prevState = prevprevState = initializeState();  
     
+    zobrist_initRandomKey(&currentState);
     //-------------------------------- LOADING TEXTURE ------------------------------------
     // White pieces
     piecesTextures[WHITE_PAWN]   = LoadTexture("../assets/pieces/white-pawn.png");

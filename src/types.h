@@ -16,6 +16,8 @@ typedef unsigned long long int U64;
 typedef unsigned int U32; 
 typedef unsigned char U8;
 
+// --------------------------
+
 typedef enum {
     a1, b1, c1, d1, e1, f1, g1, h1,
     a2, b2, c2, d2, e2, f2, g2, h2,
@@ -34,6 +36,7 @@ typedef struct{
     U32 fiftyMoveRule;
     U32 threeMoveRepetition; 
     U8 castleState; 
+    U64 hash;
 } State;
 
 typedef struct{
@@ -74,6 +77,7 @@ extern State currentState;
 extern State prevState;
 extern State prevprevState; 
 
+// Multi threading for engine
 typedef struct {
     State currentState;
     State prevState;
@@ -84,12 +88,36 @@ typedef struct {
     BishopMagic *bishopMagic;
 } EngineThreadData;
 
+// TRANSPOSITION TABLE.... send help
+
+#define TranspositionTableSize (1 << 20)
+
 typedef struct {
     U64 table[12][64];
-    U64 enPassant[8]; // uhhh we probably shoud've made enpassant board on the state...
-    U64 castling;
-    U64 side;
+    U64 enPassant[64]; 
+    // uhhh we probably shoud've made enpassant board 
+    // on the state...
 
+    U64 castling[16]; 
+    // I use 4 bit for castling, 
+    // so 16 possible castling states
+    
+    U64 side;
 } Zobrist_t;
+
+typedef enum {
+    TranspositionExact, 
+    TranspositionLower,
+    TranspositionUpper
+} TranspositionType;
+
+typedef struct {
+    U64 hash;
+    Move bestMove;
+    int depth;
+    int score;
+    TranspositionType type;
+} ZobristEntry_t;
+
 
 #endif

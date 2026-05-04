@@ -7,6 +7,7 @@
 #include "move_generation.h"
 #include "legal_move.h"
 #include "finding_magic.h"
+#include "types.h"
 
 // ---------------------------------------------------------------
 int pieceSquareTable(U64 board, int pieceSquareTable[64], int turn);
@@ -17,9 +18,15 @@ int qsearch(State *p, State prev, int depth, int alpha, int beta, RookMagic *roo
 int MVVLVA(Move m, State *p);
 
 void quicksortMoves(Move *moves, int low, int high, State *state);
+
+U64 zobrist_generateHashKey(State *state, State *prev);
+bool TT_checkTable(U64 hash, int depth, int alpha, int beta, int *score, Move *bestMove);
+
+void TT_storeTable(U64 hash, int depth, int alpha, int beta, int score, Move bestMove);
 // ---------------------------------------------------------------
 
 Zobrist_t zobrist;
+ZobristEntry_t transpositionTable[TranspositionTableSize];
 
 // ---------------------------------------------------------------
 // Piece Square Table
@@ -31,7 +38,7 @@ static int king[64] = {
     -60, -60, -60, -60, -60, -60, -60, -60,
     -40, -40, -40, -40, -40, -40, -40, -40,
     -20, -20, -20, -20, -20, -20, -20, -20,
-     20,  30,  10, -30, -10, -20,  30,  20,
+     00,  30,  10, -30, -10, -20,  30,  10,
 };
 
 static int kingEnd[64] = {
@@ -46,7 +53,7 @@ static int kingEnd[64] = {
 };
 
 static int pawn[64] = {
-    900, 900, 900,  900,  900, 900, 900, 900, // promotion goated
+    00,  00,  00,   00,   00,  00,  00,  00,
     00,  00,  00,   00,   00,  00,  00,  00,
     00,  00,  00,   10,   10,  00,  00,  00,
     00,  00,  10,   20,   20,  10,  00,  00,
@@ -171,6 +178,7 @@ int negamax(State *p, State prev, int depth, int alpha, int beta, RookMagic *roo
     // https://pubs.opengroup.org/onlinepubs/7908799/xsh/time.h.html
     // I do this to check the timeout condition less... 
     // Hope this helps a little bit in terms of performance
+/*
     if (searchAborted) {
         return 0;
     }
@@ -182,7 +190,20 @@ int negamax(State *p, State prev, int depth, int alpha, int beta, RookMagic *roo
             return 0;
         }
     }
-    
+*/
+
+    Move bestMove = {-1, -1};
+    // Zobrist Hashing
+    U64 hash = zobrist_generateHashKey(p, &prev);
+    // printf("%llx\n", hash);
+    int zobristAlpha = alpha;
+    int zobristScore;
+    Move zobristBestMove = {-1, -1};
+    if (TT_checkTable(hash, depth, zobristAlpha, beta, &zobristScore, &zobristBestMove)) {
+        // printf("used zobrist!\n");
+        return zobristScore;
+    }    
+
     // base case
     if (depth == 0) {
         // return positionEvaluation(*p);
@@ -226,6 +247,7 @@ int negamax(State *p, State prev, int depth, int alpha, int beta, RookMagic *roo
         // update the best score to value
         if (score > value) {
             value = score;
+            bestMove = moves[i];
         }
 
         // when you found a move that's better, you don't need to search moves that
@@ -241,6 +263,8 @@ int negamax(State *p, State prev, int depth, int alpha, int beta, RookMagic *roo
             break;
         }
     }
+
+    TT_storeTable(hash, depth, alpha, beta, value, bestMove);
     return value;
 }
 
@@ -301,11 +325,11 @@ Move negmaxBestMove(State *p, State prev, int depth, RookMagic *rookMagic, Bisho
 // https://www.chessprogramming.org/Quiescence_Search
 int qsearch(State *p, State prev, int depth, int alpha, int beta, RookMagic *rookMagic, BishopMagic *bishopMagic) {
     int staticEval = positionEvaluation(*p);
-   /* 
+   
     if (depth == 0) {
         return positionEvaluation(*p);
     }
-    */
+    
 
     int best_value = staticEval;
     
@@ -419,7 +443,7 @@ void quicksortMoves(Move *moves, int low, int high, State *state) {
 /*
 typedef struct {
     U64 table[12][64];
-    U64 enPassant[8]; // uhhh we probably shoud've made enpassant board on the state...
+    U64 enPassant[64];
     U64 castling;
     U64 side;
 
@@ -429,50 +453,99 @@ Zobrist_t zobrist;
 */
 // The idea follows: you just generate a random number, and then start xoring it 
 // because if you do A ^ B ^ B, it is still A. Which is such a cool idea!
-U64 zobrist_Hash(State *state) {
+
+U64 zobrist_generateHashKey(State *state, State *prev) {
     StateUnion su;
     su.s = *state;
     U64 hash = 0;
 
     for (int i = 0; i < 12; i++) {
         U64 pieceBoard = su.pieces[i];
+
         while(pieceBoard) {
             int index = popLSB(&pieceBoard);
             hash ^= zobrist.table[i][index];
         }
     }
 
+    U64 ep = generateEnPassant(*state, *prev);
+    if (ep) {
+        int file = popLSB(&ep) % 8;
+        hash ^= zobrist.enPassant[file];
+    }
+
     if (state->turn == SIDE_BLACK) {
         hash ^= zobrist.side;
     }
 
+    hash ^= zobrist.castling[(int)state->castleState];
+
     return hash;
 };
 
+
 // Initialize the random numbers
-void Zobrist_init(State *state) {
-    srand(213456);
+void zobrist_initRandomKey(State *state) {
+    srand(13465789);
 
     StateUnion su;
     su.s = *state;
-    
+   
+    // piece key
     for (int i = 0; i < 12; i++) {
         for (int j = 0; j <64; j++) {
             zobrist.table[i][j] = randomU64();
+            // printf("%llx\n", zobrist.table[i][j]);
         }
     }
-/* 
+ 
+    // enPassant key
     for (int i = 0; i < 8; i++) {
         zobrist.enPassant[i] = randomU64();
     }
-*/
 
-    zobrist.castling = randomU64();
+    // castling key
+    for (int i = 0; i < 16; i++) {
+        zobrist.castling[i] = randomU64();
+    }
+
+    // side key
     zobrist.side = randomU64();
 };
 
-// after each move, you should update the hash
-// piece follows StateUnion
-void Zobrist_update(State *state, U64 *hash, int piece, int square) {
-    *hash ^= zobrist.table[piece][square];
+bool TT_checkTable(U64 hash, int depth, int alpha, int beta, int *score, Move *bestMove) {
+    ZobristEntry_t *entry = &transpositionTable[hash % TranspositionTableSize];
+
+    // not on the table, go do work
+    if (entry->hash != hash) {
+        return false;
+    }
+
+    // bro, search more
+    if (entry->depth < depth) {
+        return false;
+    }
+
+    if (entry->type != TranspositionExact) {
+        return false;
+    }
+
+    *bestMove = entry->bestMove;
+    *score = entry->score;
+
+    return true;
+}
+
+void TT_storeTable(U64 hash, int depth, int alpha, int beta, int score, Move bestMove) {
+    if (score < alpha || score > beta) {
+        return;
+    }
+
+    ZobristEntry_t *entry = &transpositionTable[hash % TranspositionTableSize];
+
+    entry->hash = hash;
+    entry->bestMove = bestMove;
+    entry->depth = depth;
+    entry->score = score;
+    entry->type = TranspositionExact;
 }

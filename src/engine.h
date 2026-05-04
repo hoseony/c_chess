@@ -18,4 +18,5 @@ Move negmaxBestMove(State *p, State prev, int depth, RookMagic *rookMagic, Bisho
 int qsearch(State *p, State prev, int depth, int alpha, int beta, RookMagic *rookMagic, BishopMagic *bishopMagic);
 int MVVLVA(Move m, State *p);
 
+void zobrist_initRandomKey(State *state);
 #endif
