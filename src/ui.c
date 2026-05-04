@@ -1,6 +1,8 @@
 #include "../include/raylib.h"
-#include "../bitboards.c" 
-#include "../legal_move.c"
+#include "bitboards.c" 
+#include "finding_magic.c"
+#include "move_generation.c"
+#include "legal_move.c"
 
 extern int popLSB(U64 *board); 
 
@@ -88,7 +90,7 @@ inline static U64 squareClicked(Vector2 mousePosition) {
     return boardPosClicked; 
 }
 
-inline static void drawBitboard(U64 )
+// inline static void drawBitboard(U64 )
 
 
 int main() {
@@ -101,20 +103,20 @@ int main() {
     currentState = prevState = prevprevState = initializeState();  
         
     // White pieces
-    piecesTextures[WHITE_PAWN]   = LoadTexture("../../assets/pieces/white-pawn.png");
-    piecesTextures[WHITE_KNIGHT] = LoadTexture("../../assets/pieces/white-knight.png");
-    piecesTextures[WHITE_BISHOP] = LoadTexture("../../assets/pieces/white-bishop.png");
-    piecesTextures[WHITE_ROOK]   = LoadTexture("../../assets/pieces/white-rook.png");
-    piecesTextures[WHITE_QUEEN]  = LoadTexture("../../assets/pieces/white-queen.png");
-    piecesTextures[WHITE_KING]   = LoadTexture("../../assets/pieces/white-king.png");
+    piecesTextures[WHITE_PAWN]   = LoadTexture("../assets/pieces/white-pawn.png");
+    piecesTextures[WHITE_KNIGHT] = LoadTexture("../assets/pieces/white-knight.png");
+    piecesTextures[WHITE_BISHOP] = LoadTexture("../assets/pieces/white-bishop.png");
+    piecesTextures[WHITE_ROOK]   = LoadTexture("../assets/pieces/white-rook.png");
+    piecesTextures[WHITE_QUEEN]  = LoadTexture("../assets/pieces/white-queen.png");
+    piecesTextures[WHITE_KING]   = LoadTexture("../assets/pieces/white-king.png");
 
     // Black pieces
-    piecesTextures[BLACK_PAWN]   = LoadTexture("../../assets/pieces/black-pawn.png");
-    piecesTextures[BLACK_KNIGHT] = LoadTexture("../../assets/pieces/black-knight.png");
-    piecesTextures[BLACK_BISHOP] = LoadTexture("../../assets/pieces/black-bishop.png");
-    piecesTextures[BLACK_ROOK]   = LoadTexture("../../assets/pieces/black-rook.png");
-    piecesTextures[BLACK_QUEEN]  = LoadTexture("../../assets/pieces/black-queen.png");
-    piecesTextures[BLACK_KING]   = LoadTexture("../../assets/pieces/black-king.png");
+    piecesTextures[BLACK_PAWN]   = LoadTexture("../assets/pieces/black-pawn.png");
+    piecesTextures[BLACK_KNIGHT] = LoadTexture("../assets/pieces/black-knight.png");
+    piecesTextures[BLACK_BISHOP] = LoadTexture("../assets/pieces/black-bishop.png");
+    piecesTextures[BLACK_ROOK]   = LoadTexture("../assets/pieces/black-rook.png");
+    piecesTextures[BLACK_QUEEN]  = LoadTexture("../assets/pieces/black-queen.png");
+    piecesTextures[BLACK_KING]   = LoadTexture("../assets/pieces/black-king.png");
     
     SetTargetFPS(60);
     //--------------------------------------------------------------------------------------

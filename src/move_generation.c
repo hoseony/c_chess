@@ -1,6 +1,7 @@
 #include "constants.h" 
 #include "bitboards.h"
 #include "finding_magic.h"
+#include "move_generation.h"
 #include <stdbool.h>
 
 // --------- Function Prototype --------

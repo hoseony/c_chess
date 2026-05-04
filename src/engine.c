@@ -8,6 +8,7 @@
 #include "legal_move.h"
 #include "finding_magic.h"
 #include "types.h"
+#include "engine.h" 
 
 // ---------------------------------------------------------------
 int pieceSquareTable(U64 board, int pieceSquareTable[64], int turn);

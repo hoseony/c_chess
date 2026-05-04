@@ -6,6 +6,8 @@
 #include "types.h"
 #include "bitboards.h"
 #include "move_generation.h"
+#include "finding_magic.h" 
+
 
 U64 generateRookMask(int square) {
     U64 rookMask = 0;

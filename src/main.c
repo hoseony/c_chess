@@ -309,6 +309,7 @@ int main() {
 
                 if (validSquareForDrawing) {
                     drawPossibleMoves(legalMoves);
+                    printBitboard(legalMoves);
                 }
 
                 mousePosition = GetMousePosition();
@@ -323,9 +324,7 @@ int main() {
                     if (moveSelected > 0 && pieceSelected > -1 && isValidPieceSelection) {
                         State temp = currentState;
                         doMove(&currentState, &prevState, pieceSelected, popLSB(&moveSelected), true);
-                        // UPDATE prevState!!!
-                        prevState = temp;
-                        
+                        prevState = temp; 
                         printGameBoard(currentState);
                     }
 

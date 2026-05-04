@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "types.h"
+#include "parse.h"
 
 State fenToState(char *fen) {
 

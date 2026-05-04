@@ -4,6 +4,7 @@
 #include <stdbool.h>
 
 #include "constants.h" 
+#include "bitboards.h"
 #include "types.h" 
 
 //-------- function prototype ----------
