@@ -20,6 +20,10 @@ State prevprevState;
 
 EngineThreadData engineData;
 pthread_t engineThread;
+
+clock_t searchStartTime; 
+int searchTimeLimit;
+
 // ---------------------------------------------------------------
 
 void *makeEngineThread(void *arg) {
@@ -164,7 +168,6 @@ int main() {
     // printGameBoard(currentState);
 
     bool validSquareForDrawing = false; 
-    int drawSquareClicked = 0; 
     int pieceSelected = -1;
 
     bool isValidPieceSelection = false; 
@@ -290,8 +293,9 @@ int main() {
             }
 
             if (currentState.turn == SIDE_WHITE) {
-                validSquareForDrawing = ((drawSquareClicked < 64 && drawSquareClicked > 0) 
-                        && (1ULL << drawSquareClicked) &
+                printBitboard(pieceSelected);
+                validSquareForDrawing = ((pieceSelected < 64 && pieceSelected >= 0) 
+                        && (1ULL << pieceSelected) &
                         ((currentState.turn == SIDE_WHITE) ? whiteOccupied(currentState) 
                         : blackOccupied(currentState)) 
                         ) ? true : false; 
@@ -299,7 +303,7 @@ int main() {
                 legalMoves = legalBitboard(
                                 &currentState,         
                                 &prevState, 
-                                drawSquareClicked,
+                                pieceSelected,
                                 allOccupied(currentState), 
                                 (currentState.turn == SIDE_WHITE) ? blackAttackBoard(currentState, &rookMagic, &bishopMagic) 
                                 : whiteAttackBoard(currentState, &rookMagic, &bishopMagic),
@@ -309,7 +313,6 @@ int main() {
 
                 if (validSquareForDrawing) {
                     drawPossibleMoves(legalMoves);
-                    printBitboard(legalMoves);
                 }
 
                 mousePosition = GetMousePosition();
@@ -328,7 +331,6 @@ int main() {
                         printGameBoard(currentState);
                     }
 
-                    drawSquareClicked = squareClickedi(mousePosition);  
                     pieceSelected = squareClickedi(mousePosition);
                 }
             }

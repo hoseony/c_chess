@@ -7,8 +7,8 @@
 #include <stdbool.h>
 #include <time.h>
 
-clock_t searchStartTime;
-int searchTimeLimit;
+extern clock_t searchStartTime;
+extern int searchTimeLimit;
 static int nodeCount;
 static bool searchAborted;
 
