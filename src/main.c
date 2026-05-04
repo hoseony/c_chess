@@ -149,7 +149,7 @@ inline static int retrievePieceForUnion(State p, U64 square) {
     return -1; 
 }
 
-int main() {
+int main(int argc, char* argv[]) {
     // game logic 
     RookMagic rookMagic;
     BishopMagic bishopMagic;
@@ -168,7 +168,10 @@ int main() {
     // printGameBoard(currentState);
 
     bool validSquareForDrawing = false; 
+    int engine = !(argc > 1 && strncmp("-2p", argv[1], 3) == 0);
+    printf("%d\n", engine); 
     int pieceSelected = -1;
+   
 
     bool isValidPieceSelection = false; 
     U64 legalMoves, moveSelected;
@@ -272,7 +275,7 @@ int main() {
             drawSquareColors();
             drawPieces(currentState);
 
-            if (currentState.turn == SIDE_BLACK) {
+            if (currentState.turn == SIDE_BLACK && engine) {
                 // Kick off search if not already running
                 if (!engineData.searching && !engineData.doneSearching) {
                     engineData.currentState = currentState;
@@ -292,8 +295,7 @@ int main() {
                 }
             }
 
-            if (currentState.turn == SIDE_WHITE) {
-                printBitboard(pieceSelected);
+            if (currentState.turn == SIDE_WHITE || !engine) {
                 validSquareForDrawing = ((pieceSelected < 64 && pieceSelected >= 0) 
                         && (1ULL << pieceSelected) &
                         ((currentState.turn == SIDE_WHITE) ? whiteOccupied(currentState) 
@@ -321,7 +323,6 @@ int main() {
                     moveSelected = legalMoves & squareClicked(mousePosition);
                         // & (~((currentState.turn != SIDE_WHITE) ? (whiteOccupied(currentState)) : (blackOccupied(currentState))));
 
-                    printBitboard(legalMoves);
                     isValidPieceSelection = ((1ULL << pieceSelected) & 
                             ((currentState.turn == SIDE_WHITE) ? whiteOccupied(currentState) : blackOccupied(currentState))); 
                     if (moveSelected > 0 && pieceSelected > -1 && isValidPieceSelection) {
