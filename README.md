@@ -1,5 +1,26 @@
 # CFish
-The goal of this project is to make a working bitboard based chess engine in C.
+A Chess engine writeen with C with GUI built on raylib. 
+
+## Dependencies
+- Raylib
+- pthreads
+
+## Building & Running
+To play against an engine
+```bash
+mkdir build 
+cd src 
+make build run
+```
+
+To play against humans
+```bash
+mkdir build 
+cd src 
+make build 
+cd ../build
+./chess -2p
+```
 
 ## Acknowledgement
 This project was definitely not an easy project, and it would not have been possible without these sources. Thank you for the authors, and I hope you find it useful and interesting! 
