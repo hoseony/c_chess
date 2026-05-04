@@ -220,8 +220,6 @@ int negamax(State *p, State prev, int depth, int alpha, int beta, RookMagic *roo
 
     int value = -999999; // this will keep track of the best score
 
-    // ideally, move ordering should go here.
-
     // checkmate or stalemate
     if (moveCount == 0) {
         if (isInCheck(*p, rookMagic, bishopMagic)) {

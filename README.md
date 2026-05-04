@@ -6,12 +6,12 @@ This project was definitely not an easy project, and it would not have been poss
 
 Chess pieces png are taken from [greenchess](https://greenchess.net/info.php?item=downloads).
 
-The main inspiration for this project was from Sebastian Lague's Chess Engine series.
+### The main inspiration for this project was from Sebastian Lague's Chess Engine series.
 - [Coding Adventure: Chess](https://youtu.be/U4ogK0MIzqk?si=00jx32x_qVhYGBIi) 
 - [Coding Adventure: Making a Better Chess Bot](https://youtu.be/_vqlIPDR2TU?si=2ZRoP0sTJO0hp0LV)
 - [I ran a Chess Programming Tournament, Here's How it Went!](https://youtu.be/Ne40a5LkK6A?si=4vlCCHpiFXIOF8ut)
 
-The following Resources were especially helpful on the making of the project.
+### The following Resources were especially helpful on the making of the project.
 - [Chess Programming Wiki](https://www.chessprogramming.org/Main_Page)
 - [Engine Programming (Discord Server)](https://discord.com/invite/F6W6mMsTGN)
 - [Magical Bitboards and How to Find Them: Sliding move generation in chess](https://analog-hors.github.io/site/magic-bitboards/)
@@ -21,6 +21,12 @@ The following Resources were especially helpful on the making of the project.
 - [Forsyth-Edwards Notation (FEN)](https://www.chess.com/terms/fen-chess)
 - [Negamax Algorithm](https://mintlify.wiki/victoribironke/marlin/concepts/negamax)
 - [Chess Move Generation with Magic Bitboards](https://essays.jwatzman.org/essays/chess-move-generation-with-magic-bitboards.html)
-Additional Resources that would have been useful (that we found too late).
+
+### Transposition Table
+- [Chess Programing Wiki - Transposition Table](https://www.chessprogramming.org/Transposition_Table)
+- [Wikipedia - Zobrist Hashing](https://en.wikipedia.org/wiki/Zobrist_hashing)
+- [Chess Programing Wiki - Zobrist Hashing](https://www.chessprogramming.org/Zobrist_Hashing)
+
+### Additional Resources that would have been useful (that we found too late).
 - [Writing a chess engine in C++](https://ameye.dev/notes/chess-engine/)
 - [Magic Move-Bitboard Generation in Computer Chess](https://pradu.us/old/Nov27_2008/Buzz/research/magic/Bitboards.pdf)
