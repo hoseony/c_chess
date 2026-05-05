@@ -43,14 +43,14 @@ static int king[64] = {
 };
 
 static int kingEnd[64] = {
-    -10,   10,  -10, -10, -10,  -10, -10,  -10,
-    -10,   00,   00,  00,  00,   00,  00,  -10,
-    -10,   00,   10,  15,  15,   10,  00,  -10,
-    -10,   00,   15,  20,  20,   15,  00,  -10,
-    -10,   00,   15,  20,  20,   15,  00,  -10,
-    -10,   00,   25,  15,  15,   25,  00,  -10,
-    -10,   00,   00,  00,  00,   00,  00,  -10,
-    -10,  -30,  -20,  00,  00,  -20, -30,  -10,
+    -50, -30, -30, -30, -30, -30, -30, -50,
+    -30, -20, -10,   0,   0, -10, -20, -30,
+    -30, -10,  20,  30,  30,  20, -10, -30,
+    -30, -10,  30,  40,  40,  30, -10, -30,
+    -30, -10,  30,  40,  40,  30, -10, -30,
+    -30, -10,  20,  30,  30,  20, -10, -30,
+    -30, -30,   0,   0,   0,   0, -30, -30,
+    -50, -30, -30, -30, -30, -30, -30, -50,
 };
 
 static int pawn[64] = {
@@ -134,20 +134,21 @@ int positionEvaluation(State p) {
     // piece value
     // https://gcc.gnu.org/onlinedocs/gcc/Bit-Operation-Builtins.html
     // more funny things
+    U64 occupied = allOccupied(p);
 
     score += __builtin_popcountll(p.wp) * 100 + pieceSquareTable(p.wp, pawn, SIDE_WHITE);
     score += __builtin_popcountll(p.wn) * 300 + pieceSquareTable(p.wn, knight, SIDE_WHITE);
     score += __builtin_popcountll(p.wb) * 300 + pieceSquareTable(p.wb, bishop, SIDE_WHITE);
     score += __builtin_popcountll(p.wr) * 500 + pieceSquareTable(p.wr, rook, SIDE_WHITE);
     score += __builtin_popcountll(p.wq) * 900 + pieceSquareTable(p.wq, queen, SIDE_WHITE);
-    score += pieceSquareTable(p.wk, king, SIDE_WHITE);
+    score += (__builtin_popcountll(occupied) > 5) ? pieceSquareTable(p.wk, king, SIDE_WHITE) : pieceSquareTable(p.wk, kingEnd, SIDE_WHITE);
 
     score -= __builtin_popcountll(p.bp) * 100 + pieceSquareTable(p.bp, pawn, SIDE_BLACK);
     score -= __builtin_popcountll(p.bn) * 300 + pieceSquareTable(p.bn, knight, SIDE_BLACK);
     score -= __builtin_popcountll(p.bb) * 300 + pieceSquareTable(p.bb, bishop, SIDE_BLACK);
     score -= __builtin_popcountll(p.br) * 500 + pieceSquareTable(p.br, rook, SIDE_BLACK);
     score -= __builtin_popcountll(p.bq) * 900 + pieceSquareTable(p.bq, queen, SIDE_BLACK);
-    score -= pieceSquareTable(p.bk, king, SIDE_BLACK);
+    score -= (__builtin_popcountll(occupied) > 5) ? pieceSquareTable(p.bk, king, SIDE_BLACK) : pieceSquareTable(p.bk, kingEnd, SIDE_BLACK);
 
     return (p.turn == SIDE_WHITE) ? (score) : (-score);
 }
