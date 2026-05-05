@@ -171,7 +171,7 @@ int main(int argc, char* argv[]) {
     int engine = !(argc > 1 && strncmp("-2p", argv[1], 3) == 0);
     printf("%d\n", engine); 
     int pieceSelected = -1;
-   
+    bool isGameFinished = 0;  
 
     bool isValidPieceSelection = false; 
     U64 legalMoves, moveSelected;
@@ -210,17 +210,21 @@ int main(int argc, char* argv[]) {
         int moveCount = generateLegalMove(currentState, prevState, moves, 218, &rookMagic, &bishopMagic);
         
         if (moveCount == 0) { //if there's no move, it's either mate or stalemate, for now, I do not care
-            if (isInCheck(currentState, &rookMagic, &bishopMagic)) {
+            if (!isGameFinished && isInCheck(currentState, &rookMagic, &bishopMagic)) {
                 printf("Checkmate!\n");
-            } else {
+            } 
+            else if (!isGameFinished && !isInCheck(currentState, &rookMagic, &bishopMagic)) 
+            {
                 printf("Stalemate\n");
             }
-            break;
+            isGameFinished = 1; 
         }
 
         if (currentState.fiftyMoveRule == 100) {
+            if (!isGameFinished) { 
             printf("Draw by fiftyMoveRule\n");
-            break;
+            }
+            isGameFinished = 1;
         }
 
         /* 
@@ -274,65 +278,66 @@ int main(int argc, char* argv[]) {
             ClearBackground((Color){130, 130, 130, 255});
             drawSquareColors();
             drawPieces(currentState);
-
-            if (currentState.turn == SIDE_BLACK && engine) {
-                // Kick off search if not already running
-                if (!engineData.searching && !engineData.doneSearching) {
-                    engineData.currentState = currentState;
-                    engineData.prevState = prevState;
-                    engineData.searching = true;
-                    engineData.doneSearching = false;
-                    pthread_create(&engineThread, NULL, makeEngineThread, &engineData);
-                }
-
-                if (engineData.doneSearching == true) {
-                    pthread_join(engineThread, NULL);
-                    State temp = currentState;
-                    doMove(&currentState, &prevState, engineData.bestMove.from, engineData.bestMove.to, true);
-                    prevState = temp;
-                    engineData.doneSearching = false;
-                    printGameBoard(currentState);
-                }
-            }
-
-            if (currentState.turn == SIDE_WHITE || !engine) {
-                validSquareForDrawing = ((pieceSelected < 64 && pieceSelected >= 0) 
-                        && (1ULL << pieceSelected) &
-                        ((currentState.turn == SIDE_WHITE) ? whiteOccupied(currentState) 
-                        : blackOccupied(currentState)) 
-                        ) ? true : false; 
-                
-                legalMoves = legalBitboard(
-                                &currentState,         
-                                &prevState, 
-                                pieceSelected,
-                                allOccupied(currentState), 
-                                (currentState.turn == SIDE_WHITE) ? blackAttackBoard(currentState, &rookMagic, &bishopMagic) 
-                                : whiteAttackBoard(currentState, &rookMagic, &bishopMagic),
-                                &rookMagic,
-                                &bishopMagic
-                            );
-
-                if (validSquareForDrawing) {
-                    drawPossibleMoves(legalMoves);
-                }
-
-                mousePosition = GetMousePosition();
-                if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-                    
-                    moveSelected = legalMoves & squareClicked(mousePosition);
-                        // & (~((currentState.turn != SIDE_WHITE) ? (whiteOccupied(currentState)) : (blackOccupied(currentState))));
-
-                    isValidPieceSelection = ((1ULL << pieceSelected) & 
-                            ((currentState.turn == SIDE_WHITE) ? whiteOccupied(currentState) : blackOccupied(currentState))); 
-                    if (moveSelected > 0 && pieceSelected > -1 && isValidPieceSelection) {
-                        State temp = currentState;
-                        doMove(&currentState, &prevState, pieceSelected, popLSB(&moveSelected), true);
-                        prevState = temp; 
-                        printGameBoard(currentState);
+            if (!isGameFinished) {
+                if (currentState.turn == SIDE_BLACK && engine) {
+                    // Kick off search if not already running
+                    if (!engineData.searching && !engineData.doneSearching) {
+                        engineData.currentState = currentState;
+                        engineData.prevState = prevState;
+                        engineData.searching = true;
+                        engineData.doneSearching = false;
+                        pthread_create(&engineThread, NULL, makeEngineThread, &engineData);
                     }
 
-                    pieceSelected = squareClickedi(mousePosition);
+                    if (engineData.doneSearching == true) {
+                        pthread_join(engineThread, NULL);
+                        State temp = currentState;
+                        doMove(&currentState, &prevState, engineData.bestMove.from, engineData.bestMove.to, true);
+                        prevState = temp;
+                        engineData.doneSearching = false;
+                        printGameBoard(currentState);
+                    }
+                }
+
+                if (currentState.turn == SIDE_WHITE || !engine) {
+                    validSquareForDrawing = ((pieceSelected < 64 && pieceSelected >= 0) 
+                            && (1ULL << pieceSelected) &
+                            ((currentState.turn == SIDE_WHITE) ? whiteOccupied(currentState) 
+                            : blackOccupied(currentState)) 
+                            ) ? true : false; 
+                    
+                    legalMoves = legalBitboard(
+                                    &currentState,         
+                                    &prevState, 
+                                    pieceSelected,
+                                    allOccupied(currentState), 
+                                    (currentState.turn == SIDE_WHITE) ? blackAttackBoard(currentState, &rookMagic, &bishopMagic) 
+                                    : whiteAttackBoard(currentState, &rookMagic, &bishopMagic),
+                                    &rookMagic,
+                                    &bishopMagic
+                                );
+
+                    if (validSquareForDrawing) {
+                        drawPossibleMoves(legalMoves);
+                    }
+
+                    mousePosition = GetMousePosition();
+                    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                        
+                        moveSelected = legalMoves & squareClicked(mousePosition);
+                            // & (~((currentState.turn != SIDE_WHITE) ? (whiteOccupied(currentState)) : (blackOccupied(currentState))));
+
+                        isValidPieceSelection = ((1ULL << pieceSelected) & 
+                                ((currentState.turn == SIDE_WHITE) ? whiteOccupied(currentState) : blackOccupied(currentState))); 
+                        if (moveSelected > 0 && pieceSelected > -1 && isValidPieceSelection) {
+                            State temp = currentState;
+                            doMove(&currentState, &prevState, pieceSelected, popLSB(&moveSelected), true);
+                            prevState = temp; 
+                            printGameBoard(currentState);
+                        }
+
+                        pieceSelected = squareClickedi(mousePosition);
+                    }
                 }
             }
 
