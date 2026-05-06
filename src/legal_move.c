@@ -81,7 +81,6 @@ void doMove(State *p, State *prev, int from, int to, bool perftQuestionMark) {
     }
     if (wasThatCapture || wasThatWhitePawn || wasThatBlackPawn) {
         fiftyMove = 0;
-        // printf("that was not fifty\n");
     } else {
         fiftyMove++;
     }
@@ -292,6 +291,8 @@ U64 legalBitboard(State *p, State *prev, int targetSquare, U64 occupied, U64 att
 }
 
 
+
+// perft (performance test) are here to see if our legal move generations are correct or not.
 PerftResult perft(State p, State prev, int depth, RookMagic *rookMagic, BishopMagic *bishopMagic) {
     PerftResult result = {0};
 
@@ -324,7 +325,7 @@ PerftResult perft(State p, State prev, int depth, RookMagic *rookMagic, BishopMa
             bool wasThatPawn = wasThatWhitePawn || wasThatBlackPawn;
 
             // don't worry about it. This is basically how doMove handles but simpliefed (heaviliy, in one line)
-            // I really hate this but it is just a debug function so I'll just leave it like this. Whatever.
+            // I really hate this but it is just a debug function so I'll just leave it like this.
             bool isCapture = (depth == 1) && ((1ULL << to) & enemyBoard);
             bool isCastle = (depth == 1) && (((p.wk | p.bk) & (1ULL << i)) && abs(to - i) == 2);
             bool isEnPassant = (depth == 1) && wasThatPawn && ((1ULL << to) & epSquare) && !(enemyBoard & (1ULL << to)) && (abs(to - i) == 7 || abs(to - i) == 9);

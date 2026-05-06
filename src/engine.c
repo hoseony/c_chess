@@ -153,7 +153,6 @@ int positionEvaluation(State p) {
     return (p.turn == SIDE_WHITE) ? (score) : (-score);
 }
 
-
 /* I did not came up with this algorithm..
  * 
  * Pseudo code:
@@ -175,24 +174,6 @@ int negamax(State *p, State prev, int depth, int alpha, int beta, RookMagic *roo
     // alpha and beta are lower and upper bound for a child node.
     // The idea is you start from alpha -infinity, beta +infinity, and 
     // if your score gets out of this bound, you cut off the search
-
-    // This is for setting timeout for the search (since of course)
-    // https://pubs.opengroup.org/onlinepubs/7908799/xsh/time.h.html
-    // I do this to check the timeout condition less... 
-    // Hope this helps a little bit in terms of performance
-/*
-    if (searchAborted) {
-        return 0;
-    }
-
-    if ((++nodeCount % 1024) == 0) {
-        if (((clock() - searchStartTime) * 1000 / CLOCKS_PER_SEC) > searchTimeLimit) {
-            // printf("search timeout\n");
-            searchAborted = true;
-            return 0;
-        }
-    }
-*/
 
     Move bestMove = {-1, -1};
     // Zobrist Hashing
@@ -440,17 +421,6 @@ void quicksortMoves(Move *moves, int low, int high, State *state) {
 // -------------------- TRANSPOSITION TABLE ---------------------
 // https://en.wikipedia.org/wiki/Zobrist_hashing
 // https://sankethbk.github.io/blog/posts/chess_engine/2026-01-10-zobrist-hashing/
-/*
-typedef struct {
-    U64 table[12][64];
-    U64 enPassant[64];
-    U64 castling;
-    U64 side;
-
-} Zobrist_t;
-
-Zobrist_t zobrist;
-*/
 // The idea follows: you just generate a random number, and then start xoring it 
 // because if you do A ^ B ^ B, it is still A. Which is such a cool idea!
 

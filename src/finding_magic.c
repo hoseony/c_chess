@@ -8,7 +8,9 @@
 #include "move_generation.h"
 #include "finding_magic.h" 
 
-
+// ------------------- Generate Mask ------------------------
+// Generate Mask functions generates pseudo legal moves. 
+// It is a mask that is needed to be indexed (with actual blockers)
 U64 generateRookMask(int square) {
     U64 rookMask = 0;
     int r, f;
@@ -65,6 +67,8 @@ U64 generateQueenMask(int square) {
     return (generateBishopMask(square) | generateRookMask(square));
 }
 
+// ------------------- MAGIC ------------------------
+
 // we need 64 random number
 U64 randomU64() {
     return ( ((U64)rand()) << 32) | ((U64)(rand()) );
@@ -75,13 +79,11 @@ U64 smallRandomU64() {
     return (randomU64() & randomU64() & randomU64() );
 }
 
-
 // This is where the magic begin (A lot of cool stuff!)
 int magicIndex(MagicEntry *entry, U64 blockers) {
     blockers = blockers & entry->mask;
     return ((blockers * entry->magic) >> entry->shift);
 }
-
 
 U64 getRookMove(RookMagic *rookMagic, int square, U64 occupied) {
     MagicEntry entry = rookMagic->entry[square];
@@ -198,7 +200,6 @@ int prepareMagic(RookMagic *rookMagic, BishopMagic *bishopMagic) {
         }
 
         // you need to reorder the index according to the hash...
-
         for (int j = 0; j < (1 << bishopCount); j++) {
             int index = (bishopOccupancies[j] * bishopMagic->entry[i].magic) >> bishopMagic->entry[i].shift;
             bishopMagic->attacks[i][index] = generateBishopMove(i, bishopOccupancies[j]);

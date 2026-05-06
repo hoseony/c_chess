@@ -28,25 +28,17 @@ int searchTimeLimit;
 
 void *makeEngineThread(void *arg) {
     EngineThreadData *data = (EngineThreadData *)arg;
-/*
-    searchStartTime = clock();
-    searchTimeLimit = 5000;
-*/
     data->bestMove = negmaxBestMove(&data->currentState, data->prevState, 5, data->rookMagic, data->bishopMagic);
     data->doneSearching = true;
     data->searching = false;
-
     return NULL;
 }
 
 
 extern int popLSB(U64 *board); 
-
 static const unsigned int screenWidth = 1280; 
 static const unsigned int screenHeight = 960;
-
 static const unsigned int gridSquareLength = 80;
-
 static const unsigned int gridStartingPointW = (screenWidth - 8 * gridSquareLength) / 2; 
 static const unsigned int gridStartingPointH = (screenHeight - 8 * gridSquareLength) / 2;
 
@@ -155,25 +147,18 @@ int main(int argc, char* argv[]) {
     BishopMagic bishopMagic;
     prepareMagic(&rookMagic, &bishopMagic);
 
-
-
-    // runPerft(&rookMagic, &bishopMagic);
-
     // list of all possible moves
     Move moves[218];
 
     char input[5];
     Move m;
 
-    // printGameBoard(currentState);
-
-    bool validSquareForDrawing = false; 
-    int engine = !(argc > 1 && strncmp("-2p", argv[1], 3) == 0);
-    printf("%d\n", engine); 
-    int pieceSelected = -1;
-    bool isGameFinished = 0;  
-
+    bool validSquareForDrawing = false;
     bool isValidPieceSelection = false; 
+    int engine = !(argc > 1 && strncmp("-2p", argv[1], 3) == 0);
+    int pieceSelected = -1;
+    bool isGameFinished = 0;
+
     U64 legalMoves, moveSelected;
     StateUnion state_union; 
 
@@ -226,45 +211,6 @@ int main(int argc, char* argv[]) {
             }
             isGameFinished = 1;
         }
-
-        /* 
-                
-        // User Move parse 
-        if (currentState.turn == SIDE_WHITE) {
-            printf("Your move?: ");
-            scanf("%s", input);
-            int from, to;
-
-            parseLAN(input, &from, &to);
-
-            bool wasThatValidMove = false;
-            for (int i = 0; i < moveCount; i++) {
-                if(moves[i].from == from && moves[i].to == to) {
-                    wasThatValidMove = true;
-                    m = moves[i];
-                    break;
-                }
-            }
-
-            if (wasThatValidMove == false) {
-                printf("Illegal Move! try again :(\n");
-                continue;
-            }
-        } else {
-            searchStartTime = clock();
-            searchTimeLimit = 5000; // ms
-            m = negmaxBestMove(&currentState, prevState, 5, &rookMagic, &bishopMagic);
-        }
-
-        State oldState = currentState;
-        // printf("playing: %d -> %d\n", m.from, m.to);
-        doMove(&currentState, &prevState, m.from, m.to, true);
-
-        prevprevState = prevState;
-        prevState = oldState;
-
-        printGameBoard(currentState);
-        */
 
         // Update
         //----------------------------------------------------------------------------------
@@ -353,8 +299,9 @@ int main(int argc, char* argv[]) {
 
     // De-Initialization
     //--------------------------------------------------------------------------------------
-    for (int i = 0; i < 12; i++) 
+    for (int i = 0; i < 12; i++) { 
         UnloadTexture(piecesTextures[i]);        // Texture unloading
+    }
 
     CloseWindow();                // Close window and OpenGL context
     //--------------------------------------------------------------------------------------
