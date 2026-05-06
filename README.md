@@ -7,6 +7,10 @@ A Chess engine writeen with C with GUI built on raylib.
 - Raylib
 - pthreads
 
+```bash
+brew install raylib
+```
+
 ## Building & Running
 To play against an engine
 ```bash
