@@ -1,10 +1,8 @@
 # CFish
 A Chess engine writeen with C with GUI built on raylib. 
 
-> **Work in Progress** — this project is actively being developed. Expect incomplete features and breaking changes.
-
 ## Dependencies
-- Raylib
+- [Raylib](https://github.com/raysan5/raylib)
 - pthreads
 
 ```bash
