@@ -10,8 +10,7 @@
 #include "parse.h"
 #include "legal_move.h"
 #include "finding_magic.h"
-#include "../include/raylib.h"
-
+#include <raylib.h> 
 
 // ---------------------------------------------------------------
 State currentState;
