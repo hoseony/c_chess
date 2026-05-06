@@ -10,7 +10,7 @@
 #include "parse.h"
 #include "legal_move.h"
 #include "finding_magic.h"
-#include <raylib.h>
+#include "../include/raylib.h"
 
 
 // ---------------------------------------------------------------
