@@ -1,4 +1,4 @@
-# CFish
+# cfish
 A Chess engine writeen with C with GUI built on raylib. 
 
 ## Dependencies
