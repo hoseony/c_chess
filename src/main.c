@@ -12,19 +12,25 @@
 #include "finding_magic.h"
 #include <raylib.h> 
 
+// -------------------------------------------
+extern int popLSB(U64 *board); 
+static const unsigned int screenWidth = 1280; 
+static const unsigned int screenHeight = 960;
+static const unsigned int gridSquareLength = 80;
+static const unsigned int gridStartingPointW = (screenWidth - 8 * gridSquareLength) / 2; 
+static const unsigned int gridStartingPointH = (screenHeight - 8 * gridSquareLength) / 2;
 // ---------------------------------------------------------------
 State currentState;
 State prevState;
 State prevprevState; 
-
 EngineThreadData engineData;
 pthread_t engineThread;
 
 clock_t searchStartTime; 
 int searchTimeLimit;
-
 // ---------------------------------------------------------------
 
+// For separate thread of engine
 void *makeEngineThread(void *arg) {
     EngineThreadData *data = (EngineThreadData *)arg;
     data->bestMove = negmaxBestMove(&data->currentState, data->prevState, 5, data->rookMagic, data->bishopMagic);
@@ -33,14 +39,7 @@ void *makeEngineThread(void *arg) {
     return NULL;
 }
 
-
-extern int popLSB(U64 *board); 
-static const unsigned int screenWidth = 1280; 
-static const unsigned int screenHeight = 960;
-static const unsigned int gridSquareLength = 80;
-static const unsigned int gridStartingPointW = (screenWidth - 8 * gridSquareLength) / 2; 
-static const unsigned int gridStartingPointH = (screenHeight - 8 * gridSquareLength) / 2;
-
+// ------------- GUI Constants ---------------
 enum piecesTextureID {
     WHITE_PAWN = 0, 
     WHITE_KNIGHT = 1,
@@ -60,6 +59,7 @@ enum piecesTextureID {
 
 static Texture2D piecesTextures[12]; 
 
+// ------------- GUI Functions ---------------
 static void drawSquareColors() {
     Color lightSquare = (Color){238, 238, 210, 255};
     Color darkSquare = (Color){100, 120, 100, 255};
@@ -71,10 +71,6 @@ static void drawSquareColors() {
         }
     }
     
-}
-
-inline static int indexGrid(int rank, int file) {
-    return rank * 8 + file; 
 }
 
 static void drawPieces(State p) {
@@ -109,7 +105,7 @@ inline static U64 squareClicked(Vector2 mousePosition) {
 inline static int squareClickedi(Vector2 mousePosition) {
     return (((int)mousePosition.x - gridStartingPointW) / gridSquareLength) 
         + 8 * (7 - (((int)mousePosition.y - gridStartingPointH) / gridSquareLength));
-} 
+}
 
 inline static void drawPossibleMoves(U64 moves) {
     int square; 
@@ -122,52 +118,35 @@ inline static void drawPossibleMoves(U64 moves) {
     }
 }
 
-inline static int retrievePieceForUnion(State p, U64 square) {
-    StateUnion su; 
-    int i; 
-
-    su.s = p;
-    
-    int turnLoopValue = (p.turn == SIDE_WHITE) ? 0 : 5; 
-    
-    for (i = turnLoopValue; i < turnLoopValue + 6; i++) {
-        if ((su.pieces[i] & square) > 0) {
-            printf("%d\n", i);
-            return i; 
-        }
-    }
-    
-    return -1; 
-}
 
 int main(int argc, char* argv[]) {
-    // game logic 
+    //-------------------------------- Initializing Game ------------------------------------
+    // Inititialize Magic
     RookMagic rookMagic;
     BishopMagic bishopMagic;
     prepareMagic(&rookMagic, &bishopMagic);
 
     // list of all possible moves
     Move moves[218];
+    
+    // command line arguement (-2p for 2player)
+    int engine = !(argc > 1 && strncmp("-2p", argv[1], 3) == 0);
 
-    char input[5];
-    Move m;
-
+    // variables used in the game loop
     bool validSquareForDrawing = false;
     bool isValidPieceSelection = false; 
-    int engine = !(argc > 1 && strncmp("-2p", argv[1], 3) == 0);
     int pieceSelected = -1;
     bool isGameFinished = 0;
-
     U64 legalMoves, moveSelected;
     StateUnion state_union; 
 
-    InitWindow(screenWidth, screenHeight, "Chess!");
+    InitWindow(screenWidth, screenHeight, "Chess!"); // Initialize the window
     Vector2 mousePosition; 
 
-    state_union.s = currentState = prevState = prevprevState = initializeState();  
-    
-    zobrist_initRandomKey(&currentState);
+    state_union.s = currentState = prevState = prevprevState = initializeState(); // Initialize default position
+    zobrist_initRandomKey(&currentState); // Initialize Zobrist Hashing
     //-------------------------------- LOADING TEXTURE ------------------------------------
+    // pngs of chess pieces
     // White pieces
     piecesTextures[WHITE_PAWN]   = LoadTexture("../assets/pieces/white-pawn.png");
     piecesTextures[WHITE_KNIGHT] = LoadTexture("../assets/pieces/white-knight.png");
@@ -183,35 +162,31 @@ int main(int argc, char* argv[]) {
     piecesTextures[BLACK_ROOK]   = LoadTexture("../assets/pieces/black-rook.png");
     piecesTextures[BLACK_QUEEN]  = LoadTexture("../assets/pieces/black-queen.png");
     piecesTextures[BLACK_KING]   = LoadTexture("../assets/pieces/black-king.png");
-    
-    SetTargetFPS(60);
     //--------------------------------------------------------------------------------------
-
-    // Main game loop
-    while (!WindowShouldClose())    // Detect window close button or ESC key
+    SetTargetFPS(60);
+    //-------------------------------- Main Game Loop ------------------------------------
+    
+    while (!WindowShouldClose()) // Detect window close button or ESC key
     {
-        
         int moveCount = generateLegalMove(currentState, prevState, moves, 218, &rookMagic, &bishopMagic);
         
-        if (moveCount == 0) { //if there's no move, it's either mate or stalemate, for now, I do not care
-            if (!isGameFinished && isInCheck(currentState, &rookMagic, &bishopMagic)) {
+        if (moveCount == 0) { // If there's no move, it's either mate or stalemate, for now, I do not care
+            if (!isGameFinished && isInCheck(currentState, &rookMagic, &bishopMagic)) { // if one is in checki, it is a check
                 printf("Checkmate!\n");
             } 
-            else if (!isGameFinished && !isInCheck(currentState, &rookMagic, &bishopMagic)) 
-            {
+            else if (!isGameFinished && !isInCheck(currentState, &rookMagic, &bishopMagic)) { // if one is not in check, it is a stalemate
                 printf("Stalemate\n");
             }
-            isGameFinished = 1; 
+            isGameFinished = 1; // then the game is finished
         }
 
         if (currentState.fiftyMoveRule == 100) {
             if (!isGameFinished) { 
-            printf("Draw by fiftyMoveRule\n");
+                printf("Draw by fiftyMoveRule\n");
             }
             isGameFinished = 1;
         }
 
-        // Update
         //----------------------------------------------------------------------------------
         // Draw
         //----------------------------------------------------------------------------------
@@ -223,7 +198,11 @@ int main(int argc, char* argv[]) {
             ClearBackground((Color){130, 130, 130, 255});
             drawSquareColors();
             drawPieces(currentState);
+
             if (!isGameFinished) {
+
+                // Engine's Turn
+                // Open a new thread
                 if (currentState.turn == SIDE_BLACK && engine) {
                     // Kick off search if not already running
                     if (!engineData.searching && !engineData.doneSearching) {
@@ -234,6 +213,7 @@ int main(int argc, char* argv[]) {
                         pthread_create(&engineThread, NULL, makeEngineThread, &engineData);
                     }
 
+                    // if done searching, do the move
                     if (engineData.doneSearching == true) {
                         pthread_join(engineThread, NULL);
                         State temp = currentState;
@@ -244,6 +224,7 @@ int main(int argc, char* argv[]) {
                     }
                 }
 
+                // User's Turn
                 if (currentState.turn == SIDE_WHITE || !engine) {
                     validSquareForDrawing = ((pieceSelected < 64 && pieceSelected >= 0) 
                             && (1ULL << pieceSelected) &
@@ -268,12 +249,11 @@ int main(int argc, char* argv[]) {
 
                     mousePosition = GetMousePosition();
                     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-                        
-                        moveSelected = legalMoves & squareClicked(mousePosition);
-                            // & (~((currentState.turn != SIDE_WHITE) ? (whiteOccupied(currentState)) : (blackOccupied(currentState))));
+                        moveSelected = legalMoves & squareClicked(mousePosition); // move selected can not be moves that are not legal
 
                         isValidPieceSelection = ((1ULL << pieceSelected) & 
                                 ((currentState.turn == SIDE_WHITE) ? whiteOccupied(currentState) : blackOccupied(currentState))); 
+
                         if (moveSelected > 0 && pieceSelected > -1 && isValidPieceSelection) {
                             State temp = currentState;
                             doMove(&currentState, &prevState, pieceSelected, popLSB(&moveSelected), true);
@@ -285,26 +265,19 @@ int main(int argc, char* argv[]) {
                     }
                 }
             }
-
-            // NOTE: Using DrawTexturePro() we can easily rotate and scale the part of the texture we draw
-            // sourceRec defines the part of the texture we use for drawing
-            // destRec defines the rectangle where our texture part will fit (scaling it to fit)
-            // origin defines the point of the texture used as reference for rotation and scaling
-            // rotation defines the texture rotation (using origin as rotation point)
             
         EndDrawing();
-    //----------------------------------------------------------------------------------
     }
 
+    //----------------------------------------------------------------------------------
     // De-Initialization
     //--------------------------------------------------------------------------------------
     for (int i = 0; i < 12; i++) { 
-        UnloadTexture(piecesTextures[i]);        // Texture unloading
+        UnloadTexture(piecesTextures[i]); // Texture unloading
     }
 
-    CloseWindow();                // Close window and OpenGL context
+    CloseWindow(); // Close window and OpenGL context
     //--------------------------------------------------------------------------------------
-    
      
     return 0;
 }

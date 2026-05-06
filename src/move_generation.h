@@ -13,7 +13,6 @@ U64 generateKingMove(int square);
 U64 generateEnPassant(State current, State prev);
 U64 generateWhitePawnMove(int square, U64 occupied, State p, State prev);
 U64 generateBlackPawnMove(int square, U64 occupied, State p, State prev);
-U64 pawnPromotion(State *p);
 U64 generateWhitePawnAttack(int square);
 U64 generateBlackPawnAttack(int square);
 U64 blackAttackBoard(State p, RookMagic *rookMagic, BishopMagic *bishopMagic);

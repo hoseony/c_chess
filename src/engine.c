@@ -17,19 +17,16 @@ int negamax(State *p, State prev, int depth, int alpha, int beta, RookMagic *roo
 Move negmaxBestMove(State *p, State prev, int depth, RookMagic *rookMagic, BishopMagic *bishopMagic);
 int qsearch(State *p, State prev, int depth, int alpha, int beta, RookMagic *rookMagic, BishopMagic *bishopMagic);
 int MVVLVA(Move m, State *p);
-
 void quicksortMoves(Move *moves, int low, int high, State *state);
-
 U64 zobrist_generateHashKey(State *state, State *prev);
 bool TT_checkTable(U64 hash, int depth, int alpha, int beta, int *score, Move *bestMove);
-
 void TT_storeTable(U64 hash, int depth, int alpha, int beta, int score, Move bestMove);
 // ---------------------------------------------------------------
-
+// zobrist hash array initialize
 Zobrist_t zobrist;
 ZobristEntry_t transpositionTable[TranspositionTableSize];
-
 // ---------------------------------------------------------------
+
 // Piece Square Table
 static int king[64] = {
     -80, -80, -80, -80, -80, -80, -80, -80,
@@ -108,7 +105,7 @@ static int queen[64] = {
      00, 00, 00, 10, 10, 00, 00,  00,
 };
 
-// ---------------------------------------------------------------
+// ----------------------------- Evaluation Functions ----------------------------------
 
 int pieceSquareTable(U64 board, int pieceSquareTable[64], int turn) {
     int score = 0;
@@ -136,6 +133,8 @@ int positionEvaluation(State p) {
     // more funny things
     U64 occupied = allOccupied(p);
 
+    // evaluation = piece count + piece value + value from piece square table
+    // King has two different pieceSquareTable for endgame
     score += __builtin_popcountll(p.wp) * 100 + pieceSquareTable(p.wp, pawn, SIDE_WHITE);
     score += __builtin_popcountll(p.wn) * 300 + pieceSquareTable(p.wn, knight, SIDE_WHITE);
     score += __builtin_popcountll(p.wb) * 300 + pieceSquareTable(p.wb, bishop, SIDE_WHITE);
@@ -153,21 +152,7 @@ int positionEvaluation(State p) {
     return (p.turn == SIDE_WHITE) ? (score) : (-score);
 }
 
-/* I did not came up with this algorithm..
- * 
- * Pseudo code:
- *
- * int negaMax( int depth ) {
- *     if ( depth == 0 ) return evaluate();
- *     int max = -oo;
- *     for ( all moves)  {
- *         score = -negaMax( depth - 1 );
- *         if( score > max )
- *             max = score;
- *     }
- *     return max;
- * }
- */
+// ----------------------------- Move Search Functions ----------------------------------
 
 // https://en.wikipedia.org/wiki/Negamax
 int negamax(State *p, State prev, int depth, int alpha, int beta, RookMagic *rookMagic, BishopMagic *bishopMagic) {
@@ -176,14 +161,15 @@ int negamax(State *p, State prev, int depth, int alpha, int beta, RookMagic *roo
     // if your score gets out of this bound, you cut off the search
 
     Move bestMove = {-1, -1};
+    
     // Zobrist Hashing
     U64 hash = zobrist_generateHashKey(p, &prev);
-    // printf("%llx\n", hash);
     int zobristAlpha = alpha;
     int zobristScore;
     Move zobristBestMove = {-1, -1};
+    
+    // get the move from the Transposition Table if possible
     if (TT_checkTable(hash, depth, zobristAlpha, beta, &zobristScore, &zobristBestMove)) {
-        // printf("used zobrist!\n");
         return zobristScore;
     }    
 
@@ -199,6 +185,7 @@ int negamax(State *p, State prev, int depth, int alpha, int beta, RookMagic *roo
     int moveCount = generateLegalMove(*p, prev, moves, 218, rookMagic, bishopMagic);
 
     // move ordering
+    // This helps speeding up the search
     quicksortMoves(moves, 0, moveCount - 1, p);
 
     int value = -999999; // this will keep track of the best score
@@ -209,18 +196,17 @@ int negamax(State *p, State prev, int depth, int alpha, int beta, RookMagic *roo
             // being mated is bad
             return -999999;
         } else {
-            // draw is mid
+            // I did not want the bot to go for draw
             return -100;
-            // I don't really want it to go for the draw, so I gave some -
         }
     }
 
     for(int i = 0; i < moveCount; i++) {
-        State temp = *p;
         // you do the move
-
+        State temp = *p;
         doMove(&temp, &prev, moves[i].from, moves[i].to, false);
 
+        // Recursive Call
         int score = -negamax(&temp, *p, depth - 1, -beta, -alpha, rookMagic, bishopMagic);
        
         // This pruning way is called fail-soft variation of alpha-beta prunning
@@ -245,6 +231,7 @@ int negamax(State *p, State prev, int depth, int alpha, int beta, RookMagic *roo
         }
     }
 
+    // add to the transposition table (hashing)
     TT_storeTable(hash, depth, alpha, beta, value, bestMove);
     return value;
 }
@@ -303,6 +290,7 @@ Move negmaxBestMove(State *p, State prev, int depth, RookMagic *rookMagic, Bisho
     return best;
 }
 
+// The basic idea is to search until the "quite" state
 // https://www.chessprogramming.org/Quiescence_Search
 int qsearch(State *p, State prev, int depth, int alpha, int beta, RookMagic *rookMagic, BishopMagic *bishopMagic) {
     int staticEval = positionEvaluation(*p);
@@ -310,7 +298,6 @@ int qsearch(State *p, State prev, int depth, int alpha, int beta, RookMagic *roo
     if (depth == 0) {
         return positionEvaluation(*p);
     }
-    
 
     int best_value = staticEval;
     
@@ -326,6 +313,7 @@ int qsearch(State *p, State prev, int depth, int alpha, int beta, RookMagic *roo
     int moveCount = generateLegalMove(*p, prev, moves, 218, rookMagic, bishopMagic);
     U64 enemyBoard = (p->turn == SIDE_WHITE) ? (blackOccupied(*p)) : (whiteOccupied(*p));
 
+    // This is basically the same as the negamax search
     for (int i = 0; i < moveCount; i++) {
         U64 toBoard = (1ULL << moves[i].to);
 
@@ -338,7 +326,6 @@ int qsearch(State *p, State prev, int depth, int alpha, int beta, RookMagic *roo
         doMove(&temp, &prev, moves[i].from, moves[i].to, false);
 
         int score = -qsearch(&temp, *p, depth - 1, -beta, -alpha, rookMagic, bishopMagic);
-        //printf("qsearch: root move %d -> %d score %d\n", moves[i].from, moves[i].to, score);
 
         if (score >= beta) {
             return score;
@@ -356,6 +343,7 @@ int qsearch(State *p, State prev, int depth, int alpha, int beta, RookMagic *roo
     return alpha;
 }
 
+// -------------------- MOVE ORDERING ---------------------
 int pieceAt(State *p, int square) {
     StateUnion su;
     su.s = *p;
@@ -370,12 +358,10 @@ int pieceAt(State *p, int square) {
     return 0;
 }
 
-
-// -------------------- MOVE ORDERING ---------------------
 // Most Valuable Victim - Least Valuable Agressor
 // The idea here is that befoer searching through the node, you search through
 // moves that are most likely to be best.
-// 
+// For example, your pawn capturing opponents queen is probably a good move
 int MVVLVA(Move m, State *p) {
     static int victimValue[] = {1, 3, 3, 5, 9, 0};
     static int attackerValue[] = {1, 3, 3, 5, 9 ,0};
@@ -383,7 +369,7 @@ int MVVLVA(Move m, State *p) {
     int victim = pieceAt(p, m.to);
     int attacker = pieceAt(p, m.from);
 
-    return victimValue[victim] - attackerValue[attacker] + 8;
+    return victimValue[victim] - attackerValue[attacker];
 }
 
 

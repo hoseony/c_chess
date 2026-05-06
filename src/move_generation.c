@@ -237,12 +237,6 @@ U64 generateBlackKingCastleMove(State p, U64 occupied, U64 whiteAttack, RookMagi
     return castlingMove;
 }
 
-U64 pawnPromotion(State *p) {
-    // For now, we are going to force it to be a queen.
-    // --> doMove
-    return 0;
-}
-
 // --------------------------------------------------
 
 U64 blackAttackBoard(State p, RookMagic *rookMagic, BishopMagic *bishopMagic) {

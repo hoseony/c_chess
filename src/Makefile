@@ -22,4 +22,4 @@ clean:
 	rm -f ../build/chess $(OBJS)
 
 run: chess
-	../build/chess
+	cd ../build && ./chess
