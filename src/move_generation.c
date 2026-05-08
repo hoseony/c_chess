@@ -22,15 +22,14 @@ bool isInCheck(State p, RookMagic *rookMagic, BishopMagic *bishopMagic);
 
 // --------- generate move ----------
 
-// Todo: magic bitboard
-
-// Could be more efficient
-// There should be better way of doing this
+// Generates a bitboard with all the possible knight moves for a knight on square  
 U64 generateKnightMove(int square) {
     U64 knightMove = 0;
     U64 shifter = (1ULL << square); 
-
-    // does not add invalid moves if knight is on edge of board 
+    
+    // Each shift operation adds a square that the knight can reach 
+    // The righthand side of the expression is meant for bounds checking 
+    // (preventing the knight from wrapping around the board)
     knightMove |= (shifter << 17) * !(((BIT_8_RANK | BIT_7_RANK) & shifter) || (BIT_H_FILE & shifter)); 
     knightMove |= (shifter << 15) * !(((BIT_8_RANK | BIT_7_RANK) & shifter) || (BIT_A_FILE & (shifter))); 
     knightMove |= (shifter << 6) * !((BIT_8_RANK & shifter) || ((BIT_A_FILE | BIT_B_FILE) & (shifter))); 
@@ -137,45 +136,52 @@ U64 generateKingMove(int square) {
 
     return kingMove;
 }
-
+/*
+ * Creates a Bitboard that holds the capture locations of an "en-passantable" pawns 
+ * Written branchlessly, so it has some curiously written conditionals
+*/
 U64 generateEnPassant(State current, State prev) {
-   U64 en_passant = ((((current.wp ^ prev.wp)) & current.wp) >> 8) * (((current.wp ^ prev.wp) & BIT_2_RANK) > 0) * (((current.wp ^ prev.wp) & BIT_4_RANK) > 0);
-   en_passant |= ((((current.bp ^ prev.bp)) & current.bp) << 8) * (((current.bp ^ prev.bp) & BIT_7_RANK) > 0) * (((current.bp ^ prev.bp) & BIT_5_RANK) > 0);
+    // If a pawn is moved, the "from" and "to" positions on the board are identified, then the "to" position is extracted
+    // from the position by an and operation with current.wp, 
+    // the next two checks are branchless operations to see if the white pawns moved
+    // from the correct rank, the shift is done to move the flipped bit into the correct capture position
+   U64 en_passant = ((((current.wp ^ prev.wp)) & current.wp) >> 8) 
+       * (((current.wp ^ prev.wp) & BIT_2_RANK) > 0) * (((current.wp ^ prev.wp) & BIT_4_RANK) > 0);
+   // The same process is repeated but for the black pawn 
+   en_passant |= ((((current.bp ^ prev.bp)) & current.bp) << 8) 
+       * (((current.bp ^ prev.bp) & BIT_7_RANK) > 0) * (((current.bp ^ prev.bp) & BIT_5_RANK) > 0);
    return en_passant & ~((current.turn == SIDE_WHITE) ? BIT_3_RANK : BIT_6_RANK); 
 }
 
+// This functions generates a Bitboard that represents the legal moves that can be taken 
+// by a white pawn in the position defined by square 
+// Done branchlessly, so written with curious conditionals 
 U64 generateWhitePawnMove(int square, U64 occupied, State p, State prev) {
     U64 whitePawnMove = 0;
     U64 black_board = blackOccupied(p);
 
     // capture
+    // Identifies the square to the top left and right and checks whether they are occupied by black pieces 
+    // If not, those bits are designated as invalid 
     whitePawnMove |= ((1ULL << square) << 9) * ((BIT_A_FILE & (1ULL << square) << 9) == 0); 
     whitePawnMove |= ((1ULL << square) << 7) * ((BIT_H_FILE & (1ULL << square) << 7) == 0); 
     whitePawnMove &= black_board;  
     // en-passant
+    // Identifies whether or not the en-passant the squares 
+    // to the upper right and left of the pieces are En-passant capture squares
+    // (There is also some bounds checking making sure that the pawn can't wrap around the board
     whitePawnMove |= (((1ULL << square) << 9) & generateEnPassant(p, prev)) * ((BIT_A_FILE & (1ULL << square) << 9) == 0); 
     whitePawnMove |= (((1ULL << square) << 7) & generateEnPassant(p, prev)) * ((BIT_H_FILE & (1ULL << square) << 7) == 0);
     // direction
+    // Single move forwards, check if it's occupied 
     whitePawnMove |= (1ULL << square << 8) * (((1ULL << square << 8) & occupied) == 0); 
     // two move initial
+    // Checks if it's in the starting rank, and generates another possible move if thats the case 
     whitePawnMove |= (1ULL << square << 16) * (((1ULL << square & BIT_2_RANK) > 0)) * (((1ULL << square << 16) & occupied) == 0) * (((1ULL << square << 8) & occupied) == 0);
     return whitePawnMove;
 }
 
-U64 generateWhitePawnAttack(int square) {
-    U64 whitePawnAttack = 0;
-    whitePawnAttack |= ((1ULL << square) << 9) * ((BIT_A_FILE & (1ULL << square) << 9) == 0); 
-    whitePawnAttack |= ((1ULL << square) << 7) * ((BIT_H_FILE & (1ULL << square) << 7) == 0); 
-    return whitePawnAttack;  
-}
-
-U64 generateBlackPawnAttack(int square) {
-    U64 blackPawnAttack = 0;
-    blackPawnAttack |= ((1ULL << square) >> 9) * ((BIT_H_FILE & (1ULL << square) >> 9) == 0); 
-    blackPawnAttack |= ((1ULL << square) >> 7) * ((BIT_A_FILE & (1ULL << square) >> 7) == 0); 
-    return blackPawnAttack;  
-}
-
+// Same as generateWhitePawnMove but for black pawns 
 U64 generateBlackPawnMove(int square, U64 occupied, State p, State prev) {
     U64 blackPawnMove = 0;
     U64 white_board = whiteOccupied(p); 
@@ -193,13 +199,34 @@ U64 generateBlackPawnMove(int square, U64 occupied, State p, State prev) {
     return blackPawnMove;
 }
 
+
+// Useful function for attack board generation later (for engine), basically capture section 
+// of generateWhitePawnMove
+U64 generateWhitePawnAttack(int square) {
+    U64 whitePawnAttack = 0;
+    whitePawnAttack |= ((1ULL << square) << 9) * ((BIT_A_FILE & (1ULL << square) << 9) == 0); 
+    whitePawnAttack |= ((1ULL << square) << 7) * ((BIT_H_FILE & (1ULL << square) << 7) == 0); 
+    return whitePawnAttack;  
+}
+
+// Same as before but for black 
+U64 generateBlackPawnAttack(int square) {
+    U64 blackPawnAttack = 0;
+    blackPawnAttack |= ((1ULL << square) >> 9) * ((BIT_H_FILE & (1ULL << square) >> 9) == 0); 
+    blackPawnAttack |= ((1ULL << square) >> 7) * ((BIT_A_FILE & (1ULL << square) >> 7) == 0); 
+    return blackPawnAttack;  
+}
+
+// Creates the bitboard for white king castling moves
 U64 generateWhiteKingCastleMove(State p, U64 occupied, U64 blackAttack, RookMagic *rookMagic, BishopMagic *bishopMagic) {
     U64 castlingMove = 0;
 
+    // The information of whether or not any of the castling pieces has moved is stored in castle state 
     if (p.castleState == 0b0000) {
         return 0;
     }
-
+    
+    // If there are pieces that attack the castling path (or checking the King), then the castling cannot be computed
     if (p.castleState & 0b1000) {
         if ( !(occupied & ((1ULL << 5) | (1ULL << 6))) && !(blackAttack & ((1ULL << 4) | (1ULL << 5) | (1ULL << 6))) ) {
             castlingMove |= (1ULL << 6);
@@ -215,6 +242,7 @@ U64 generateWhiteKingCastleMove(State p, U64 occupied, U64 blackAttack, RookMagi
     return castlingMove;
 }
 
+// Same as white king castle moves  
 U64 generateBlackKingCastleMove(State p, U64 occupied, U64 whiteAttack, RookMagic *rookMagic, BishopMagic *bishopMagic) {
     U64 castlingMove = 0;
 
@@ -239,6 +267,7 @@ U64 generateBlackKingCastleMove(State p, U64 occupied, U64 whiteAttack, RookMagi
 
 // --------------------------------------------------
 
+// Calls all the attack functions to generate a Bitboard that describes every square visible to black pieces
 U64 blackAttackBoard(State p, RookMagic *rookMagic, BishopMagic *bishopMagic) {
     U64 attackTable = 0;
     U64 occupied = allOccupied(p);
@@ -282,6 +311,7 @@ U64 blackAttackBoard(State p, RookMagic *rookMagic, BishopMagic *bishopMagic) {
     return (attackTable);
 }
 
+// Same thing as the black attack board but for white pieces 
 U64 whiteAttackBoard(State p, RookMagic *rookMagic, BishopMagic *bishopMagic) {
     U64 attackTable = 0;
     U64 occupied = allOccupied(p);
@@ -325,6 +355,7 @@ U64 whiteAttackBoard(State p, RookMagic *rookMagic, BishopMagic *bishopMagic) {
     return (attackTable);
 }
 
+// Checks if a piece is in check 
 bool isInCheck(State p, RookMagic *rookMagic, BishopMagic *bishopMagic) {
     if (p.turn == SIDE_WHITE) {
         return ((p.wk & blackAttackBoard(p, rookMagic, bishopMagic)) > 0);
